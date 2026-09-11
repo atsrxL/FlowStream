@@ -12,5 +12,7 @@ public final class FlowApp extends Application {
     public final ExecutorService disk = Executors.newSingleThreadExecutor();
     public final Handler main = new Handler(Looper.getMainLooper());
     public Store store;
-    @Override public void onCreate() { super.onCreate(); store = new Store(this); }
+    public dev.flowstream.player.net.ThumbnailCache thumbnails;
+    public final java.util.Map<String,dev.flowstream.core.RandomOrder> randomOrders=new java.util.HashMap<>();
+    @Override public void onCreate() { super.onCreate(); store = new Store(this);thumbnails=new dev.flowstream.player.net.ThumbnailCache(this); }
 }

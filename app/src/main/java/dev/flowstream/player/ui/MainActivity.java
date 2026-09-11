@@ -18,6 +18,8 @@ public final class MainActivity extends BackActivity {
     private TextView heading, path, empty;
     private ListView list;
     private ProgressBar progress;
+    private Button thumbnailsToggle;
+    private Switch randomToggle;
     private String serverId="", folder="";
     private Server server;
     private boolean history;
@@ -37,6 +39,9 @@ public final class MainActivity extends BackActivity {
         path=Ui.text(this,"",13,Ui.MUTED); crumbs.addView(path,new LinearLayout.LayoutParams(0,-2,1));
         crumbs.addView(Ui.button(this,"上一级",()->{if(!history && !folder.isEmpty()){folder=MediaPaths.parent(folder);reload();}}));
         crumbs.addView(Ui.button(this,"刷新",this::reload)); root.addView(crumbs);
+        LinearLayout modes=Ui.row(this);
+        thumbnailsToggle=Ui.button(this,"缩略图",()->{app.store.setThumbnailMode(!app.store.thumbnailMode());thumbnailsToggle.setText(app.store.thumbnailMode()?"▧ 缩略图":"☰ 列表");showRows();});modes.addView(thumbnailsToggle,new LinearLayout.LayoutParams(0,-2,1));
+        Switch random=new Switch(this);randomToggle=random;random.setText("随机播放");random.setTextColor(Ui.TEXT);random.setChecked(app.store.randomMode());random.setOnCheckedChangeListener((v,on)->app.store.setRandomMode(on));modes.addView(random,new LinearLayout.LayoutParams(0,-2,1));root.addView(modes);
         progress=new ProgressBar(this); root.addView(progress,new LinearLayout.LayoutParams(-1,Ui.dp(this,36)));
         FrameLayout content=new FrameLayout(this); list=new ListView(this); list.setDividerHeight(1);
         list.setDivider(new android.graphics.drawable.ColorDrawable(Ui.PANEL)); content.addView(list,new FrameLayout.LayoutParams(-1,-1));
@@ -63,7 +68,7 @@ public final class MainActivity extends BackActivity {
             }).show();
         }).setNegativeButton("关闭",null).show();
     }
-    @Override protected void onResume(){super.onResume();reload();}
+    @Override protected void onResume(){super.onResume();randomToggle.setChecked(app.store.randomMode());thumbnailsToggle.setText(app.store.thumbnailMode()?"▧ 缩略图":"☰ 列表");reload();}
     private void reload(){
         final int token=++generation; progress.setVisibility(View.VISIBLE); empty.setText("正在读取…");
         if(history){
@@ -101,7 +106,13 @@ public final class MainActivity extends BackActivity {
             @Override public View getView(int p,View convert,ViewGroup parent){
                 if(showingHistory){Session s=visibleSessions.get(p);return Ui.listRow(MainActivity.this,"↺",s.queue.get(0).name,
                         s.serverName+" · "+Ui.time(s.position)+" / "+Ui.time(s.duration)+" · "+DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT).format(new Date(s.updated)));}
-                RemoteItem item=visibleEntries.get(p);return Ui.listRow(MainActivity.this,item.directory?"▤":"▶",item.name,item.directory?"文件夹":Ui.size(item.size)+" · 点击播放");
+                RemoteItem item=visibleEntries.get(p);
+                LinearLayout row=(LinearLayout)Ui.listRow(MainActivity.this,item.directory?"▤":"▶",item.name,item.directory?"文件夹":Ui.size(item.size)+" · 点击播放");
+                if(app.store.thumbnailMode() && !item.directory && server!=null){
+                    row.removeViewAt(0);ImageView thumb=new ImageView(MainActivity.this);thumb.setContentDescription(item.name+" 缩略图");thumb.setScaleType(ImageView.ScaleType.CENTER_CROP);thumb.setBackground(Ui.background(Ui.PANEL,8,MainActivity.this));thumb.setImageResource(dev.flowstream.player.R.drawable.ic_launcher);
+                    row.addView(thumb,0,new LinearLayout.LayoutParams(Ui.dp(MainActivity.this,120),Ui.dp(MainActivity.this,76)));
+                    final int token=generation;app.thumbnails.load(server,item,b->{if(!stale(token) && b!=null)thumb.setImageBitmap(b);});
+                }return row;
             }
         });
     }

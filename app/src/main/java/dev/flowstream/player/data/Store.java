@@ -21,6 +21,10 @@ public final class Store extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX session_updated ON sessions(updated DESC)");
     }
     @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) { throw new IllegalStateException("数据库迁移尚未定义"); }
+    public boolean thumbnailMode(){return prefs.getBoolean("thumbnail_mode",false);}
+    public void setThumbnailMode(boolean enabled){prefs.edit().putBoolean("thumbnail_mode",enabled).apply();}
+    public boolean randomMode(){return prefs.getBoolean("random_mode",false);}
+    public void setRandomMode(boolean enabled){prefs.edit().putBoolean("random_mode",enabled).apply();}
     public int preloadMb() { return Math.max(0,Math.min(50,prefs.getInt("preload_mb",10))); }
     public void setPreloadMb(int mb) { prefs.edit().putInt("preload_mb",Math.max(0,Math.min(50,mb))).apply(); }
     public float sourceSpeed(String id) { return prefs.getFloat("speed."+id,1f); }

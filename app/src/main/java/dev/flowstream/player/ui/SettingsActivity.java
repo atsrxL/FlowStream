@@ -20,6 +20,8 @@ public final class SettingsActivity extends BackActivity {
         LinearLayout toolbar=Ui.row(this);toolbar.setBackgroundColor(Ui.PANEL);
         toolbar.addView(Ui.button(this,"返回",this::finish));toolbar.addView(Ui.text(this,"设置 · 来源服务器",20,Ui.TEXT));root.addView(toolbar);
         ScrollView scroll=new ScrollView(this);LinearLayout body=Ui.column(this);Ui.pad(body,16);scroll.addView(body);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        Button clearThumbs=Ui.button(this,"清除文件缩略图缓存",()->{});clearThumbs.setOnClickListener(v->{clearThumbs.setEnabled(false);app.thumbnails.clear(()->{if(!isDestroyed()){clearThumbs.setEnabled(true);Ui.toast(this,"文件缩略图缓存已清除");}});});body.addView(clearThumbs);
+        body.addView(Ui.text(this,"缩略图保存在应用自用临时目录，重启后可复用；系统也可能回收，最多128 MB。",12,Ui.MUTED));
         TextView preload=Ui.text(this,"下一条预读 · "+app.store.preloadMb()+" MB",17,Ui.TEXT);body.addView(preload);
         SeekBar preloadSize=new SeekBar(this);preloadSize.setMax(50);preloadSize.setProgress(app.store.preloadMb());preloadSize.setContentDescription("下一条预读大小，0 到 50 MB");body.addView(preloadSize);
         preloadSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
@@ -34,7 +36,7 @@ public final class SettingsActivity extends BackActivity {
         body.addView(Ui.button(this,"清除全部会话历史",()->new AlertDialog.Builder(this).setTitle("清除本机会话历史？")
                 .setMessage("不会删除服务器配置和媒体文件。正在播放的会话关闭后也不会自动恢复此历史。")
                 .setNegativeButton("取消",null).setPositiveButton("清除",(d,w)->app.disk.execute(()->{app.store.clearHistory();app.main.post(()->Ui.toast(this,"会话历史已清除"));})).show()));
-        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存；历史保留在本机，已关闭应用备份。无广告、无统计 SDK、无整片磁盘缓存。\nFlowStream 0.3.0 · 预读与精细播放",13,Ui.MUTED));
+        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存；历史保留在本机，已关闭应用备份。无广告、无统计 SDK、无整片磁盘缓存。\nFlowStream 0.4.0 · 缩略图与随机播放",13,Ui.MUTED));
         setContentView(root);Ui.safeInsets(this,root);refresh();
     }
     private void refresh(){final int token=++generation;app.disk.execute(()->{

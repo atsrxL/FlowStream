@@ -51,7 +51,9 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     private final NextVideoCache nextCache=new NextVideoCache();
     private long loopA=-1,loopB=-1;
     private boolean gestureLocked;
-    private Button lockButton;
+    private Button lockButton,abButton,randomButton;
+    private RandomOrder randomOrder;
+    private boolean usingRandom;
     private final dev.flowstream.player.net.FramePreview framePreview=new dev.flowstream.player.net.FramePreview();
     private Runnable pendingPreview;
     private ImageView preview;
@@ -72,7 +74,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
             if(loopA>=0 && loopB>loopA && !scrubbing && player.getPlayWhenReady() && position>=loopB)player.seekTo(loopA);
             capturePreview(position);
             if(!scrubbing){seek.setEnabled(duration>0 && player.isCurrentMediaItemSeekable());seek.setProgress(duration>0?(int)Math.min(10000,position*10000.0/duration):0);}
-            time.setText(Ui.time(position)+" / "+Ui.time(duration));pauseButton.setText(player.getPlayWhenReady()?"暂停":"播放");
+            time.setText(Ui.time(position)+" / "+Ui.time(duration));pauseButton.setText(player.getPlayWhenReady()?"Ⅱ":"▶");pauseButton.setContentDescription(player.getPlayWhenReady()?"暂停":"播放");
             if(SystemClock.uptimeMillis()-lastCheckpoint>=5000){checkpoint();lastCheckpoint=SystemClock.uptimeMillis();}
         }
         handler.postDelayed(this,250);
@@ -98,23 +100,29 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         toolbar.addView(Ui.button(this,"‹ 返回",this::back),new LinearLayout.LayoutParams(0,-2,1));
         toolbar.addView(Ui.button(this,"▣ 小窗",this::enterPip),new LinearLayout.LayoutParams(0,-2,1));
         toolbar.addView(Ui.button(this,"•••",this::moreMenu),new LinearLayout.LayoutParams(0,-2,1));for(int i=0;i<toolbar.getChildCount();i++)toolbar.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);top.addView(toolbar);
-        speedButton=Ui.button(this,"1.00×",this::speedMenu);
+        
         title=Ui.text(this,"正在打开视频…",16,Ui.TEXT);title.setGravity(Gravity.CENTER);title.setMaxLines(1);Ui.pad(title,6);top.addView(title);
         counter=Ui.text(this,"",12,Ui.MUTED);counter.setGravity(Gravity.CENTER);counter.setPadding(Ui.dp(this,6),0,0,0);top.addView(counter);
         root.addView(top,new FrameLayout.LayoutParams(-1,-2,Gravity.TOP));
         bottom=Ui.column(this);bottom.setBackgroundColor(Color.TRANSPARENT);Ui.pad(bottom,8);
         seek=new SeekBar(this);seek.setMax(10000);seek.setContentDescription("视频播放进度");bottom.addView(seek,new LinearLayout.LayoutParams(-1,Ui.dp(this,48)));
         time=Ui.text(this,"00:00 / --:--",13,Ui.TEXT);time.setGravity(Gravity.CENTER);bottom.addView(time);
-        LinearLayout buttons=Ui.row(this);
-        buttons.addView(Ui.button(this,"上一条",()->switchVideo(-1)),new LinearLayout.LayoutParams(0,-2,1));
-        pauseButton=Ui.button(this,"暂停",()->{gestures.cancelGesture();togglePlayback();});
-        pauseButton.setBackgroundColor(Color.TRANSPARENT);buttons.addView(pauseButton,new LinearLayout.LayoutParams(0,-2,1));
-        buttons.addView(Ui.button(this,"下一条",()->switchVideo(1)),new LinearLayout.LayoutParams(0,-2,1));
-        buttons.addView(Ui.button(this,"旋转",this::rotate),new LinearLayout.LayoutParams(0,-2,1));bottom.addView(buttons);
-        LinearLayout extras=Ui.row(this);extras.setPadding(0,Ui.dp(this,8),0,0);
-        extras.addView(Ui.button(this,"☆ 收藏",()->bookmark(true)),new LinearLayout.LayoutParams(0,-2,1));
-        extras.addView(speedButton,new LinearLayout.LayoutParams(0,-2,1));
-        lockButton=Ui.button(this,"锁定",this::toggleLock);extras.addView(lockButton,new LinearLayout.LayoutParams(0,-2,1));bottom.addView(extras);
+        LinearLayout buttons=Ui.row(this);buttons.setGravity(Gravity.CENTER);
+        abButton=circle(buttons,"A/B",this::cycleAb);
+        circle(buttons,"-10s",()->seekBy(-10000,false));circle(buttons,"-5s",()->seekBy(-5000,false));circle(buttons,"-1s",()->seekBy(-1000,false));circle(buttons,"-1f",()->seekBy(-1,true));
+        pauseButton=circle(buttons,"▶",this::playControl);
+        circle(buttons,"+1f",()->seekBy(1,true));circle(buttons,"+1s",()->seekBy(1000,false));circle(buttons,"+5s",()->seekBy(5000,false));circle(buttons,"+10s",()->seekBy(10000,false));
+        bottom.addView(buttons,new LinearLayout.LayoutParams(-1,-2));
+        buttons.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
+            int size=Math.min(Ui.dp(this,48),Math.max(1,(r-l)/10));
+            for(int i=0;i<buttons.getChildCount();i++){View child=buttons.getChildAt(i);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)child.getLayoutParams();if(lp.width!=size||lp.height!=size){lp.width=lp.height=size;child.setLayoutParams(lp);}}
+        });
+        LinearLayout extras=Ui.row(this);extras.setGravity(Gravity.CENTER);extras.setPadding(0,Ui.dp(this,8),0,0);
+        circle(extras,"☆",()->bookmark(true)).setContentDescription("收藏");
+        speedButton=circle(extras,"◴",this::speedMenu);speedButton.setContentDescription("播放速度");
+        randomButton=circle(extras,"⇄",this::toggleRandom);randomButton.setContentDescription("随机播放开关");
+        circle(extras,"⟳",this::rotate).setContentDescription("旋转");
+        lockButton=circle(extras,"锁",this::toggleLock);bottom.addView(extras);
         preview=new ImageView(this);preview.setScaleType(ImageView.ScaleType.FIT_CENTER);preview.setVisibility(View.GONE);
         FrameLayout.LayoutParams previewParams=new FrameLayout.LayoutParams(Ui.dp(this,160),Ui.dp(this,90),Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);previewParams.bottomMargin=Ui.dp(this,250);root.addView(preview,previewParams);
         previewTime=Ui.text(this,"",12,Ui.TEXT);previewTime.setGravity(Gravity.CENTER);previewTime.setVisibility(View.GONE);FrameLayout.LayoutParams pt=new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);pt.bottomMargin=Ui.dp(this,230);root.addView(previewTime,pt);
@@ -182,14 +190,15 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     }
     private void openCurrent(long position,boolean playing){
         if(player==null || source==null || session==null)return;
-        clearPreviews();loopA=loopB=-1;transform.newVideo();
+        clearPreviews();loopA=loopB=-1;updateAb();transform.newVideo();
+        syncRandom();randomOrder.visit(session.current().path);
         errorBox.setVisibility(View.GONE);RemoteItem item=session.current();
         MediaItem.Builder media=new MediaItem.Builder().setUri(source.uri(item.path)).setMediaId(session.id+":"+session.index)
                 .setMediaMetadata(new MediaMetadata.Builder().setTitle(item.name).build());
         String ext=item.path.toLowerCase(Locale.ROOT);if(ext.endsWith(".m3u8"))media.setMimeType(MimeTypes.APPLICATION_M3U8);else if(ext.endsWith(".mpd"))media.setMimeType(MimeTypes.APPLICATION_MPD);
         player.setMediaItem(media.build(),Math.max(0,position));player.prepare();player.setPlayWhenReady(playing);
         title.setText(item.name);counter.setText((session.index+1)+" / "+session.queue.size()+" · "+session.serverName+" · 单条循环");
-        speedButton.setText(SpeedScale.label(trick.baseSpeed()));showControls();
+        speedButton.setContentDescription("播放速度 "+SpeedScale.label(trick.baseSpeed()));showControls();
     }
     private boolean inPip(){return isInPictureInPictureMode() || pipTransition;}
     private void showControls(){
@@ -206,7 +215,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     private void togglePlayback(){
         if(player==null){showControls();return;}
         player.setPlayWhenReady(!player.getPlayWhenReady());
-        pauseButton.setText(player.getPlayWhenReady()?"暂停":"播放");
+        pauseButton.setText(player.getPlayWhenReady()?"Ⅱ":"▶");pauseButton.setContentDescription(player.getPlayWhenReady()?"暂停":"播放");
         showControls();hud.setVisibility(View.GONE);checkpoint();
     }
     @Override public void tap(){gestures.performClick();}
@@ -232,7 +241,10 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     }
     @Override public void switchVideo(int delta){
         if(player==null || session==null || scrubbing)return;
-        int next=MediaPaths.adjacent(session.index,delta,session.queue.size());if(next<0){flash(delta>0?"已经是最后一条":"已经是第一条");return;}
+        syncRandom();int next;
+        if(usingRandom){java.util.List<String> paths=queuePaths();String selected=delta>0?randomOrder.next(paths):randomOrder.previous(paths);next=selected==null?-1:paths.indexOf(selected);}
+        else next=MediaPaths.adjacent(session.index,delta,session.queue.size());
+        if(next<0){flash(usingRandom?(delta>0?"当前文件夹的视频已全部看过":"没有更早的播放记录"):(delta>0?"已经是最后一条":"已经是第一条"));return;}
         gestures.cancelGesture();checkpoint();session.index=next;session.position=0;session.duration=0;openCurrent(0,true);checkpoint();
         video.animate().cancel();video.setTranslationY(delta>0?root.getHeight()*.7f:-root.getHeight()*.7f);video.setAlpha(.4f);video.animate().translationY(0).alpha(1f).setDuration(240).setInterpolator(new android.view.animation.DecelerateInterpolator()).start();
     }
@@ -240,11 +252,42 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(trick==null)return;gestures.cancelGesture();handler.removeCallbacks(hideControls);
         String[] labels=new String[SpeedScale.COUNT];for(int i=0;i<labels.length;i++)labels[i]=SpeedScale.label(SpeedScale.at(i))+(i==0?" · 静音慢放":"");
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle("播放速度").setSingleChoiceItems(labels,SpeedScale.nearest(trick.baseSpeed()),(d,which)->{
-            if(trick!=null){trick.setBaseSpeed(SpeedScale.at(which));session.speed=trick.baseSpeed();app.store.saveSourcePlayback(server.id,session.speed,transform.inspectMode());speedButton.setText(SpeedScale.label(trick.baseSpeed()));checkpoint();if(which==0)flash("0.05× 使用静音视频慢放");}d.dismiss();
+            if(trick!=null){trick.setBaseSpeed(SpeedScale.at(which));session.speed=trick.baseSpeed();app.store.saveSourcePlayback(server.id,session.speed,transform.inspectMode());speedButton.setContentDescription("播放速度 "+SpeedScale.label(trick.baseSpeed()));checkpoint();if(which==0)flash("0.05× 使用静音视频慢放");}d.dismiss();
         }).setNegativeButton("关闭",null).create();dialog.setOnDismissListener(d->showControls());dialog.show();
     }
-    private void preloadNext(){if(server!=null && session!=null && session.index+1<session.queue.size())nextCache.preload(this,server,session.queue.get(session.index+1).path,app.store.preloadMb());}
-    private void toggleLock(){gestures.cancelGesture();gestureLocked=!gestureLocked;lockButton.setText(gestureLocked?"解锁":"锁定");handler.removeCallbacks(hideControls);showControls();if(gestureLocked)handler.removeCallbacks(hideControls);}
+    private java.util.List<String> queuePaths(){java.util.List<String> paths=new java.util.ArrayList<>();for(RemoteItem item:session.queue)paths.add(item.path);return paths;}
+    private void syncRandom(){
+        if(session==null)return;
+        String key=session.serverId+"\u0000"+session.folder;
+        randomOrder=app.randomOrders.computeIfAbsent(key,k->new RandomOrder());
+        usingRandom=app.store.randomMode();randomButton.setTextColor(usingRandom?0xff65b5ff:Ui.TEXT);
+        randomButton.setContentDescription(usingRandom?"随机播放已开启":"随机播放已关闭");
+    }
+    private void toggleRandom(){gestures.cancelGesture();app.store.setRandomMode(!app.store.randomMode());syncRandom();if(session!=null){randomOrder.visit(session.current().path);preloadNext();}showControls();}
+    private void preloadNext(){
+        if(server==null||session==null)return;syncRandom();
+        String path=usingRandom?randomOrder.peekNext(queuePaths()):(session.index+1<session.queue.size()?session.queue.get(session.index+1).path:null);
+        nextCache.preload(this,server,path==null?"":path,path==null?0:app.store.preloadMb());
+    }
+    private Button circle(LinearLayout row,String label,Runnable action){
+        Button b=Ui.button(this,label,action);b.setTextSize(11);b.setPadding(0,0,0,0);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);
+        android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();bg.setShape(android.graphics.drawable.GradientDrawable.OVAL);bg.setColor(Ui.PANEL);bg.setStroke(Ui.dp(this,1),0xff444448);b.setBackground(bg);
+        row.addView(b,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));return b;
+    }
+    private void updateAb(){if(abButton!=null){abButton.setText(loopB>loopA&&loopA>=0?"A↔B":loopA>=0?"A/•":"A/B");abButton.setTextColor(loopA>=0?0xff65b5ff:Ui.TEXT);}}
+    private void cycleAb(){
+        if(player==null||!player.isCurrentMediaItemSeekable())return;gestures.cancelGesture();
+        if(loopA<0){loopA=player.getCurrentPosition();loopB=-1;}
+        else if(loopB<0){long p=player.getCurrentPosition();if(p<=loopA+200){Ui.toast(this,"B 点应在 A 点之后");return;}loopB=p;player.seekTo(loopA);player.play();}
+        else loopA=loopB=-1;
+        updateAb();showControls();
+    }
+    private void playControl(){
+        gestures.cancelGesture();
+        if(player!=null && loopA>=0){loopA=loopB=-1;updateAb();player.play();showControls();checkpoint();return;}
+        togglePlayback();
+    }
+    private void toggleLock(){gestures.cancelGesture();gestureLocked=!gestureLocked;lockButton.setText(gestureLocked?"解锁":"锁");handler.removeCallbacks(hideControls);showControls();if(gestureLocked)handler.removeCallbacks(hideControls);}
     private void bookmark(boolean favorite){if(session==null || player==null)return;app.store.bookmark(server.id,session.current().path,session.current().name,favorite?-1:player.getCurrentPosition());Ui.toast(this,favorite?"已收藏":"已添加时间点书签");}
     private void seekBy(long delta,boolean frame){
         if(player==null || !player.isCurrentMediaItemSeekable())return;
@@ -255,13 +298,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     private void moreMenu(){
         if(player==null)return;gestures.cancelGesture();handler.removeCallbacks(hideControls);
         LinearLayout panel=Ui.column(this);Ui.pad(panel,16);
-        panel.addView(Ui.text(this,"精细定位",18,Ui.TEXT));
-        String[] steps={"1 帧","1 秒","5 秒","10 秒"};long[] values={1,1000,5000,10000};
-        for(int i=0;i<steps.length;i++){final int k=i;LinearLayout row=Ui.row(this);row.addView(Ui.button(this,"− "+steps[i],()->seekBy(-values[k],k==0)),new LinearLayout.LayoutParams(0,-2,1));row.addView(Ui.button(this,"+ "+steps[i],()->seekBy(values[k],k==0)),new LinearLayout.LayoutParams(0,-2,1));panel.addView(row);}
-        panel.addView(Ui.text(this,"1 帧按当前轨帧率精确 seek，变帧率与反向定位可能落在邻近帧。",11,Ui.MUTED));
-        panel.addView(Ui.button(this,"设为 A 点 · "+(loopA<0?"未设置":Ui.time(loopA)),()->{loopA=player.getCurrentPosition();loopB=-1;Ui.toast(this,"A 点已设置");}));
-        panel.addView(Ui.button(this,"设为 B 点并循环",()->{long p=player.getCurrentPosition();if(loopA>=0 && p>loopA+200){loopB=p;player.seekTo(loopA);player.play();Ui.toast(this,"A–B 循环已开启");}else Ui.toast(this,"请先设置 A，再定位到更后的 B");}));
-        panel.addView(Ui.button(this,"关闭 A–B 循环",()->{loopA=loopB=-1;Ui.toast(this,"区间循环已关闭");}));
+        panel.addView(Ui.text(this,"底部 A/B：设 A → 设 B 并循环；播放键退出区间循环。1f 按轨道帧率定位。",13,Ui.MUTED));
         panel.addView(Ui.button(this,"＋ 时间点书签",()->bookmark(false)));
         panel.addView(Ui.button(this,"播放信息",this::playbackInfo));
         ScrollView scroll=new ScrollView(this);scroll.addView(panel);

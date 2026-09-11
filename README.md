@@ -1,3 +1,7 @@
+# FlowStream 0.4.0 · 缩略图与随机播放
+
+最新交付见dist/FlowStream-0.4.0-debug.apk；[本次变更与验证](docs/handoff/RESULTS-0.4.0.md)。以下保留历史说明。
+
 # FlowStream 0.3.0 · 已构建真机调试版
 
 APK位于dist/FlowStream-0.3.0-debug.apk，已安装MI 9 Android 15。最新实施与验收见[RESULTS](docs/handoff/RESULTS.md)。下方0.2.0内容保留为原始交接记录。

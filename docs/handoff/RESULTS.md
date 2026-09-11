@@ -51,3 +51,7 @@ APK：dist/FlowStream-0.3.0-debug.apk。包名dev.flowstream.player.debug，已�
 ## 复现
 
 设置JAVA_HOME为JDK17后执行bash tools/build.sh。设备测试构建:app:assembleDebugAndroidTest；启动WebDAV和SMB2本地服务，adb reverse端口并安装测试APK，运行am instrument -w（SMB加-e protocol SMB）dev.flowstream.player.debug.test/dev.flowstream.player.DeviceChecks。
+
+## 后续0.4.0
+
+最新结果与交付见RESULTS-0.4.0.md。旧版结果保留。
