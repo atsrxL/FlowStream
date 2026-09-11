@@ -6,7 +6,7 @@ package dev.flowstream.core;
  * transform. No bitmap/decoded-frame copy or decoder resize is needed while pinching.
  */
 public final class VideoViewport {
-    public enum Mode { FIT, NATIVE, CUSTOM }
+    public enum Mode { FIT, WIDTH, HEIGHT, NATIVE, CUSTOM }
     private double viewportWidth, viewportHeight, sourceWidth, sourceHeight, pixelRatio = 1;
     private double scale = 1, left, top;
     private Mode mode = Mode.FIT;
@@ -26,7 +26,7 @@ public final class VideoViewport {
     /** Includes native size even for low-res video which FIT had enlarged. */
     public double minScale() { return Math.min(1, fitScale()); }
     /** Eight times FIT, or native size, whichever is larger. */
-    public double maxScale() { return Math.max(1, fitScale() * 8); }
+    public double maxScale() { return Math.max(Math.max(1,fitScale()*8),ready()?Math.max(viewportWidth/(sourceWidth*pixelRatio),viewportHeight/sourceHeight):1); }
     public double relativeToFit() { return scale / fitScale(); }
 
     public void setViewport(double w, double h) {
@@ -47,6 +47,12 @@ public final class VideoViewport {
         mode = Mode.FIT; scale = fitScale();
         left = (viewportWidth - width()) / 2; top = (viewportHeight - height()) / 2;
         clamp();
+    }
+    public void preset(Mode selected){
+        if(selected!=Mode.WIDTH && selected!=Mode.HEIGHT && selected!=Mode.NATIVE)throw new IllegalArgumentException("preset");
+        mode=selected;
+        scale=!ready()?1:selected==Mode.NATIVE?1:selected==Mode.WIDTH?viewportWidth/(sourceWidth*pixelRatio):viewportHeight/sourceHeight;
+        left=(viewportWidth-width())/2;top=(viewportHeight-height())/2;clamp();
     }
     /** FIT -> native 1:1 around the tap; NATIVE/CUSTOM -> FIT. */
     public boolean toggleNative(double focusX, double focusY) {
@@ -72,8 +78,7 @@ public final class VideoViewport {
     /** Only snap after all pointers are up, never change gesture ownership during a pinch. */
     public void finishTransform() {
         if (!ready()) return;
-        if (mode == Mode.CUSTOM && Math.abs(scale / fitScale() - 1) <= .015) resetFit();
-        else clamp();
+        clamp();
     }
     private void rescale(double target, double oldX, double oldY, double newX, double newY) {
         double ratio = target / scale;

@@ -16,10 +16,11 @@ public final class SettingsActivity extends BackActivity {
     private int generation;
     @Override protected void onCreate(Bundle state){
         super.onCreate(state);app=(FlowApp)getApplication();
-        LinearLayout root=Ui.column(this);root.setBackgroundColor(Ui.BG);
-        LinearLayout toolbar=Ui.row(this);toolbar.setBackgroundColor(Ui.PANEL);
+        LinearLayout root=Ui.column(this);root.setBackgroundColor(Ui.bg(this));
+        LinearLayout toolbar=Ui.row(this);toolbar.setBackgroundColor(Ui.panel(this));
         toolbar.addView(Ui.button(this,"返回",this::finish));toolbar.addView(Ui.text(this,"设置 · 来源服务器",20,Ui.TEXT));root.addView(toolbar);
         ScrollView scroll=new ScrollView(this);LinearLayout body=Ui.column(this);Ui.pad(body,16);scroll.addView(body);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        body.addView(Ui.button(this,"主题 · "+(app.store.theme().equals("black")?"黑":app.store.theme().equals("white")?"白":"跟随系统"),()->new AlertDialog.Builder(this).setTitle("主题").setSingleChoiceItems(new String[]{"黑","白","跟随系统"},app.store.theme().equals("black")?0:app.store.theme().equals("white")?1:2,(d,which)->{app.store.setTheme(new String[]{"black","white","system"}[which]);d.dismiss();recreate();}).setNegativeButton("取消",null).show()));
         Button clearThumbs=Ui.button(this,"清除文件缩略图缓存",()->{});clearThumbs.setOnClickListener(v->{clearThumbs.setEnabled(false);app.thumbnails.clear(()->{if(!isDestroyed()){clearThumbs.setEnabled(true);Ui.toast(this,"文件缩略图缓存已清除");}});});body.addView(clearThumbs);
         body.addView(Ui.text(this,"缩略图保存在应用自用临时目录，重启后可复用；系统也可能回收，最多128 MB。",12,Ui.MUTED));
         TextView preload=Ui.text(this,"下一条预读 · "+app.store.preloadMb()+" MB",17,Ui.TEXT);body.addView(preload);
@@ -33,11 +34,8 @@ public final class SettingsActivity extends BackActivity {
         body.addView(Ui.text(this,"点击服务器选择；编辑与删除按钮在每条记录下方。",13,Ui.MUTED));servers=Ui.column(this);body.addView(servers);
         body.addView(Ui.button(this,"＋ 添加服务器",()->form(new Server())));
         TextView info=Ui.text(this,"连接仅用于读取目录和播放，不会修改服务器文件。WebDAV 支持 Basic 认证或匿名访问，不支持 Digest / OAuth。",14,Ui.MUTED);info.setPadding(0,Ui.dp(this,18),0,Ui.dp(this,18));body.addView(info);
-        body.addView(Ui.button(this,"清除全部会话历史",()->new AlertDialog.Builder(this).setTitle("清除本机会话历史？")
-                .setMessage("不会删除服务器配置和媒体文件。正在播放的会话关闭后也不会自动恢复此历史。")
-                .setNegativeButton("取消",null).setPositiveButton("清除",(d,w)->app.disk.execute(()->{app.store.clearHistory();app.main.post(()->Ui.toast(this,"会话历史已清除"));})).show()));
-        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存；历史保留在本机，已关闭应用备份。无广告、无统计 SDK、无整片磁盘缓存。\nFlowStream 0.4.1 · 缩略图与随机播放",13,Ui.MUTED));
-        setContentView(root);Ui.safeInsets(this,root);refresh();
+        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存，已关闭应用备份。无广告、无统计 SDK。\nFlowStream 0.6.0",13,Ui.MUTED));
+        setContentView(root);Ui.safeInsets(this,root);Ui.systemBars(this);refresh();
     }
     private void refresh(){final int token=++generation;app.disk.execute(()->{
         try{List<Server> result=app.store.servers();app.main.post(()->{
@@ -47,13 +45,13 @@ public final class SettingsActivity extends BackActivity {
                 Button choose=Ui.button(this,(app.store.activeServer().equals(s.id)?"● ":"○ ")+s.name,()->{app.store.selectServer(s.id);refresh();});card.addView(choose);
                 card.addView(Ui.text(this,s.description(),12,Ui.MUTED));LinearLayout actions=Ui.row(this);
                 actions.addView(Ui.button(this,"编辑",()->app.disk.execute(()->{try{Server full=app.store.server(s.id);app.main.post(()->{if(!isDestroyed())form(full);});}catch(Exception e){app.main.post(()->Ui.toast(this,Ui.error(e)));}})));
-                actions.addView(Ui.button(this,"删除",()->new AlertDialog.Builder(this).setTitle("删除服务器配置？").setMessage(s.name+"\n不会删除服务器内容；原会话将无法续播。")
+                actions.addView(Ui.button(this,"删除",()->new AlertDialog.Builder(this).setTitle("删除服务器配置？").setMessage(s.name+"\n不会删除服务器内容；该来源将无法继续播放。")
                         .setNegativeButton("取消",null).setPositiveButton("删除",(d,w)->app.disk.execute(()->{app.store.deleteServer(s.id);app.main.post(this::refresh);})).show()));card.addView(actions);servers.addView(card);
             }
         });}catch(Exception e){app.main.post(()->Ui.toast(this,Ui.error(e)));}
     });}
     private EditText field(LinearLayout body,String label,String value,int type){
-        body.addView(Ui.text(this,label,13,Ui.MUTED));EditText e=new EditText(this);e.setText(value);e.setSingleLine(true);e.setInputType(type);e.setTextColor(Ui.TEXT);e.setTextSize(16);
+        body.addView(Ui.text(this,label,13,Ui.MUTED));EditText e=new EditText(this);e.setText(value);e.setSingleLine(true);e.setInputType(type);e.setTextColor(Ui.fg(this));e.setTextSize(16);
         e.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);body.addView(e,new LinearLayout.LayoutParams(-1,-2));return e;
     }
     private void form(Server existing){

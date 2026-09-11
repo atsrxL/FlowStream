@@ -13,10 +13,16 @@ import java.util.Locale;
 public final class Ui {
     public static final int BG = Color.BLACK, PANEL = 0xff1d1d1f, TEXT = 0xfff1f5f9,
             MUTED = 0xff96969d, BLUE = 0xffe8e8ed;
+    public static boolean dark(Context c){if(c instanceof PlayerActivity)return true;String mode=c.getSharedPreferences("config",0).getString("theme","system");return mode.equals("black") || (mode.equals("system") && (c.getResources().getConfiguration().uiMode & 48)==32);}
+    public static int bg(Context c){return dark(c)?Color.BLACK:Color.WHITE;}
+    public static int fg(Context c){return dark(c)?TEXT:0xff17171c;}
+    public static int panel(Context c){return dark(c)?PANEL:0xfff0f0f3;}
+    public static int muted(Context c){return dark(c)?0xffa4a4ac:0xff6e6e76;}
+    public static void systemBars(Activity a){a.getWindow().setStatusBarColor(bg(a));a.getWindow().setNavigationBarColor(bg(a));if(Build.VERSION.SDK_INT>=30){WindowInsetsController w=a.getWindow().getInsetsController();int mask=WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;if(w!=null)w.setSystemBarsAppearance(dark(a)?0:mask,mask);}}
     private Ui() { }
     public static int dp(Context c, float n) { return Math.round(n * c.getResources().getDisplayMetrics().density); }
     public static TextView text(Context c, String value, int sp, int color) {
-        TextView t = new TextView(c); t.setText(value); t.setTextSize(sp); t.setTextColor(color); return t;
+        TextView t = new TextView(c); t.setText(value); t.setTextSize(sp); t.setTextColor(color==TEXT||color==BLUE?fg(c):color==MUTED?muted(c):color); return t;
     }
     public static LinearLayout column(Context c) {
         LinearLayout l = new LinearLayout(c); l.setOrientation(LinearLayout.VERTICAL); return l;
@@ -25,9 +31,9 @@ public final class Ui {
         LinearLayout l = new LinearLayout(c); l.setOrientation(LinearLayout.HORIZONTAL); l.setGravity(Gravity.CENTER_VERTICAL); return l;
     }
     public static Button button(Context c, String label, Runnable action) {
-        Button b = new Button(c); b.setText(label); b.setAllCaps(false); b.setTextColor(TEXT);
+        Button b = new Button(c); b.setText(label); b.setAllCaps(false); b.setTextColor(fg(c));
         b.setTextSize(14); b.setMinWidth(dp(c,48)); b.setMinimumHeight(dp(c,48));
-        b.setBackground(background(PANEL,24,c)); b.setPadding(dp(c,10),0,dp(c,10),0);b.setStateListAnimator(null);
+        b.setBackground(background(panel(c),24,c)); b.setPadding(dp(c,10),0,dp(c,10),0);b.setStateListAnimator(null);
         b.setContentDescription(label); b.setOnClickListener(v -> action.run()); return b;
     }
     public static GradientDrawable background(int color, float radius, Context c) {

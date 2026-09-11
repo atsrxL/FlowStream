@@ -52,15 +52,15 @@ public final class CoreTests {
         test("swipe: 450ms cooldown between commits",()->{G g=new G();g.down(210,450,0);g.m.move(210,250,100);g.up(210,250,150);g.down(210,450,200);g.m.move(210,250,250);g.up(210,250,300);eq(g.out.switches,1);g.down(210,450,650);g.m.move(210,250,700);g.up(210,250,750);eq(g.out.switches,2);});
         test("hold: top third has no hold action",()->{G g=new G();g.down(210,150,0);g.m.holdTimeout(380);g.up(210,150,600);eq(g.out.starts,0);eq(g.out.taps,0);});
         test("hold: middle starts normal playback",()->{G g=new G();g.down(210,450,0);g.m.holdTimeout(379);eq(g.out.starts,0);g.m.holdTimeout(380);near(g.out.forward,1f);g.up(210,450,500);eq(g.out.ends,1);});
-        test("hold: bottom starts 2x then left/right adjust",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(380);near(g.out.forward,2f);g.m.move(90,750,420);near(g.out.forward,1f);g.m.move(390,750,450);near(g.out.forward,5f);g.up(390,750,500);eq(g.out.ends,1);});
-        test("hold: middle left reverse and return to 1x",()->{G g=new G();g.down(300,450,0);g.m.holdTimeout(400);g.m.move(276,450,450);near(g.out.reverse,.1f);g.m.move(48,450,500);near(g.out.reverse,2f);g.m.move(300,450,550);near(g.out.forward,1f);g.up(300,450,600);eq(g.out.ends,1);});
+        test("hold: bottom starts 2x then left/right adjust",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(380);near(g.out.forward,2f);g.m.move(90,750,420);ok(g.out.forward<2&&g.out.forward>.1f);g.m.move(420,750,450);near(g.out.forward,5f);g.up(390,750,500);eq(g.out.ends,1);});
+        test("hold: middle left reverse and return to 1x",()->{G g=new G();g.down(300,450,0);g.m.holdTimeout(400);g.m.move(276,450,450);near(g.out.reverse,.1f);g.m.move(0,450,500);near(g.out.reverse,4f);g.m.move(300,450,550);near(g.out.forward,1f);g.up(300,450,600);eq(g.out.ends,1);});
         test("hold: vertical drift after activation never changes video",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(400);g.m.move(210,100,500);g.m.up(210,100,-4000,600);eq(g.out.switches,0);eq(g.out.ends,1);});
         test("hold: cannot activate after vertical axis is locked",()->{G g=new G();g.down(210,450,0);g.m.move(210,430,70);g.m.holdTimeout(450);g.up(210,430,600);eq(g.out.starts,0);});
         test("hold: subthreshold diagonal movement still cancels long press eligibility",()->{G g=new G();g.down(210,450,0);g.m.move(222,462,70);g.m.holdTimeout(450);g.up(222,462,600);eq(g.out.starts,0);});
         test("cancel: hold restored once, no tap on later up",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(400);g.m.cancel();g.m.cancel();g.up(210,750,500);eq(g.out.ends,1);eq(g.out.taps,0);});
         test("cancel: pending long press cannot fire after cancel",()->{G g=new G();g.down(210,450,0);g.m.cancel();g.m.holdTimeout(400);eq(g.out.starts,0);});
         test("edges: Android back and home strips reserved",()->{for(float[] p:new float[][]{{10,450},{415,450},{210,5},{210,890}}){G g=new G();g.down(p[0],p[1],0);g.m.move(p[0],p[1]-250,100);g.m.holdTimeout(400);g.up(p[0],p[1]-250,500);eq(g.out.taps,0);eq(g.out.switches,0);eq(g.out.starts,0);}});
-        test("zones: starting zone remains latched across boundaries",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(400);g.m.move(90,450,500);near(g.out.forward,1f);eq(g.out.reverse,0f);g.m.cancel();});
+        test("zones: starting zone remains latched across boundaries",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(400);g.m.move(0,450,500);near(g.out.forward,.1f);eq(g.out.reverse,0f);g.m.cancel();});
         test("clock: reverse 0.1x advances by 100ms in 1s",()->{ReverseClock c=new ReverseClock();c.start(10000,0,.1f);for(int t=100;t<=1000;t+=100)c.target(t);eq(c.target(1000),9900L);});
         test("clock: independent of keyframe-rounded player position",()->{ReverseClock c=new ReverseClock();c.start(2000,0,2f);eq(c.target(150),1700L);eq(c.target(300),1400L);});
         test("clock: clamps at file start",()->{ReverseClock c=new ReverseClock();c.start(150,0,2f);eq(c.target(500),0L);eq(c.target(1000),0L);});
@@ -99,6 +99,16 @@ public final class CoreTests {
                 ok(g.out.switches<=1);ok(g.out.taps<=1);ok(!(g.out.taps>0 && g.out.switches>0));eq(g.out.starts,g.out.ends);ok(!g.out.active);if(g.out.everHeld)eq(g.out.switches,0);
             }
         });
+        test("hold: edges reach endpoints from every start",()->{for(int start=24;start<=396;start+=3){near(SpeedScale.bottomAt(start,0,420),.1f);near(SpeedScale.bottomAt(start,420,420),5f);near(SpeedScale.bottomAt(start,start,420),2f);near(SpeedScale.reverseAt(start,0),4f);near(SpeedScale.reverseAt(start,start),0f);}});
+        test("multi-tap: single double triple exclusive and cancelled",()->{
+            int[] calls={0,0,0};MultiTapResolver r=new MultiTapResolver(300,60,new MultiTapResolver.Output(){public void singleTap(){calls[0]++;}public void doubleTap(){calls[1]++;}public void tripleTap(){calls[2]++;}});
+            r.down(100,100,0);r.up(true,100,100,20);r.confirm(319);eq(calls[0],0);r.confirm(320);eq(calls[0],1);
+            r.down(100,100,1000);r.up(true,100,100,1020);r.down(100,100,1080);r.up(true,100,100,1100);eq(calls[1],0);r.confirm(1400);eq(calls[1],1);
+            for(int i=0;i<3;i++){r.down(100,100,2000+i*80);r.up(true,100,100,2020+i*80);}eq(calls[2],1);eq(calls[0],1);eq(calls[1],1);
+            r.down(100,100,3000);r.up(true,100,100,3020);r.down(100,100,3080);r.up(true,100,100,3100);r.down(100,100,3160);r.up(false,160,100,3200);r.confirm(4000);eq(calls[1],1);
+            r.down(100,100,5000);r.up(true,100,100,5020);r.cancel();r.confirm(5400);eq(calls[0],1);
+        });
+        test("viewport: three presets and persistent custom",()->{VideoViewport v=new VideoViewport();v.setViewport(1080,2340);v.setVideoSize(640,360,1);v.preset(VideoViewport.Mode.WIDTH);near((float)v.width(),1080);v.preset(VideoViewport.Mode.HEIGHT);near((float)v.height(),2340);v.preset(VideoViewport.Mode.NATIVE);near((float)v.width(),640);v.pinch(1,540,1170,540,1170);v.finishTransform();ok(v.mode()==VideoViewport.Mode.CUSTOM);});
         tests += InteractionTests.run();
         System.out.println("\nALL "+tests+" TEST GROUPS PASSED (30,000 gesture streams + 10,000 geometry streams)");
     }

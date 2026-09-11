@@ -27,6 +27,19 @@ public final class SpeedScale {
         float raw = dxDp < 0 ? 2f + (dxDp + 12f) / 108f : 2f + (dxDp - 12f) / 56f;
         return Math.round(Math.max(.1f, Math.min(5f, raw)) * 20f) / 20f;
     }
+    private static float progress(float distance,float span,float dead){
+        dead=Math.min(dead,span*.35f);return Math.max(0,Math.min(1,(distance-dead)/Math.max(.01f,span-dead)));
+    }
+    public static float bottomAt(float start,float current,float width){
+        float dx=current-start;
+        float t=progress(Math.abs(dx),dx<0?start:width-start,12);
+        return Math.round((dx<0?2-1.9f*t:2+3*t)*20)/20f;
+    }
+    public static float reverseAt(float start,float current){
+        float distance=start-current,dead=Math.min(24,start*.35f);
+        if(distance<dead)return 0;
+        return Math.round((.1f+3.9f*progress(distance,start,dead))*10)/10f;
+    }
     /** Middle hold: first 24dp are dead zone; then 0.1x per 12dp, up to 4x. */
     public static float reverse(float dxDp) {
         if (dxDp > -24f) return 0f;

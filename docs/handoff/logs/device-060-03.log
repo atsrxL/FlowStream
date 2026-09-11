@@ -1,0 +1,77 @@
+PASS network directory
+PASS thumbnail mode has two columns
+PASS thumbnail grid lists media
+PASS grid thumbnails decode both test videos, decoded=2
+PASS theme black resolves correctly
+PASS theme black background
+PASS theme white resolves correctly
+PASS theme white background
+PASS theme system resolves correctly
+PASS theme system background
+PASS loading meter counts real network media bytes
+PASS loading meter shows speed unit
+PASS top and bottom exact layout
+PASS info opens
+PASS info toggles closed
+PASS short timeline tap does not seek
+PASS long press starts timeline drag
+PASS drag shows thumbnail preview label
+PASS drag decodes preview image
+PASS timeline release seeks and preserves pause
+PASS minus two seconds
+PASS plus two seconds
+PASS no playback history persisted
+PASS default width fit
+PASS width fit actual geometry
+PASS single tap does not pause
+PASS single tap hides menu
+PASS single tap shows menu
+PASS double tap pauses
+PASS double tap does not change size
+PASS triple tap does not toggle pause
+PASS triple selects height fit
+PASS height fit actual geometry
+PASS triple selects native
+PASS native uses decoded pixels
+PASS triple cycles back to width
+PASS network directory
+PASS thumbnail mode has two columns
+PASS thumbnail grid lists media
+PASS grid thumbnails decode both test videos, decoded=2
+PASS theme black resolves correctly
+PASS theme black background
+PASS theme white resolves correctly
+PASS theme white background
+PASS theme system resolves correctly
+PASS theme system background
+PASS loading meter counts real network media bytes
+PASS loading meter shows speed unit
+PASS top and bottom exact layout
+PASS info opens
+PASS info toggles closed
+PASS short timeline tap does not seek
+PASS long press starts timeline drag
+PASS drag shows thumbnail preview label
+PASS drag decodes preview image
+PASS timeline release seeks and preserves pause
+PASS minus two seconds
+PASS plus two seconds
+PASS no playback history persisted
+PASS default width fit
+PASS width fit actual geometry
+PASS single tap does not pause
+PASS single tap hides menu
+PASS single tap shows menu
+PASS double tap pauses
+PASS double tap does not change size
+PASS triple tap does not toggle pause
+PASS triple selects height fit
+PASS height fit actual geometry
+PASS triple selects native
+PASS native uses decoded pixels
+PASS triple cycles back to width
+FAIL java.lang.AssertionError: preset 0 upward swipe switches
+	at dev.flowstream.player.DeviceChecks.check(DeviceChecks.java:26)
+	at dev.flowstream.player.DeviceChecks.onStart(DeviceChecks.java:82)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2599)
+

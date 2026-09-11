@@ -37,8 +37,14 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     private LinearLayout top,bottom,errorBox;
     private TextView title,counter,time,hud,errorMessage;
     private Button speedButton,pauseButton;
-    private SeekBar seek;
+    private HoldSeekBar seek;
+    private TextView mediaInfo;
+    private long previewTarget=-1;
     private ProgressBar buffering;
+    private TextView loadingRate;
+    private final java.util.concurrent.atomic.AtomicLong loadedBytes=new java.util.concurrent.atomic.AtomicLong();
+    private long rateAt,rateBytes;
+    private double loadRate;
     private ExoPlayer player;
     private MediaSession mediaSession;
     private TrickPlayController trick;
@@ -51,7 +57,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     private final NextVideoCache nextCache=new NextVideoCache();
     private long loopA=-1,loopB=-1;
     private boolean gestureLocked;
-    private Button lockButton,abButton,randomButton;
+    private Button lockButton,abButton;
     private RandomOrder randomOrder;
     private boolean usingRandom;
     private final dev.flowstream.player.net.FramePreview framePreview=new dev.flowstream.player.net.FramePreview();
@@ -65,16 +71,21 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
 
     private long lastCheckpoint;
     private final Handler handler=new Handler(Looper.getMainLooper());
-    private final Runnable hideControls=()->{if(!scrubbing && player!=null && player.getPlayWhenReady() && (trick==null || !trick.isHeld())){top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);}};
+    private final Runnable hideControls=()->{if(!scrubbing && (mediaInfo==null||mediaInfo.getVisibility()!=View.VISIBLE) && player!=null && player.getPlayWhenReady() && (trick==null || !trick.isHeld())){top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);}};
     private final Runnable hideHint=()->hud.setVisibility(View.GONE);
     private final Runnable update=new Runnable(){@Override public void run(){
         if(!visible)return;
+        long now=SystemClock.elapsedRealtime(),bytes=loadedBytes.get();
+        if(rateAt==0){rateAt=now;rateBytes=bytes;}
+        else if(now-rateAt>=500){loadRate=Math.max(0,bytes-rateBytes)*1000d/(now-rateAt);rateAt=now;rateBytes=bytes;}
+        if(loadingRate!=null){loadingRate.setVisibility(buffering.getVisibility());loadingRate.setText(String.format(Locale.ROOT,"加载 · %.1f %s",loadRate>=1048576?loadRate/1048576:loadRate/1024,loadRate>=1048576?"MB/s":"KB/s"));}
+
         if(player!=null && session!=null){
             long duration=player.getDuration(),position=player.getCurrentPosition();
             if(loopA>=0 && loopB>loopA && !scrubbing && player.getPlayWhenReady() && position>=loopB)player.seekTo(loopA);
             capturePreview(position);
             if(!scrubbing){seek.setEnabled(duration>0 && player.isCurrentMediaItemSeekable());seek.setProgress(duration>0?(int)Math.min(10000,position*10000.0/duration):0);}
-            time.setText(Ui.time(position)+" / "+Ui.time(duration));pauseButton.setText(player.getPlayWhenReady()?"Ⅱ":"▶");pauseButton.setContentDescription(player.getPlayWhenReady()?"暂停":"播放");
+            if(!scrubbing)time.setText(Ui.time(position)+" / "+Ui.time(duration));pauseButton.setText(player.getPlayWhenReady()?"Ⅱ":"▶");pauseButton.setContentDescription(player.getPlayWhenReady()?"暂停":"播放");
             if(SystemClock.uptimeMillis()-lastCheckpoint>=5000){checkpoint();lastCheckpoint=SystemClock.uptimeMillis();}
         }
         handler.postDelayed(this,250);
@@ -91,43 +102,47 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         video=(PlayerView)getLayoutInflater().inflate(R.layout.flow_video,root,false);
         transform=new VideoTransformController(video);
         root.addView(video,new FrameLayout.LayoutParams(-1,-1));
-        gestures=new GestureOverlay(this,this);gestures.setOnClickListener(v->togglePlayback());root.addView(gestures,new FrameLayout.LayoutParams(-1,-1));
+        gestures=new GestureOverlay(this,this);gestures.setOnClickListener(v->toggleControls());root.addView(gestures,new FrameLayout.LayoutParams(-1,-1));
         buffering=new ProgressBar(this);FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48),Gravity.CENTER);root.addView(buffering,bp);
+        loadingRate=Ui.text(this,"加载 · 0.0 KB/s",13,Ui.TEXT);loadingRate.setGravity(Gravity.CENTER);loadingRate.setBackground(Ui.background(0xaa000000,10,this));FrameLayout.LayoutParams rp=new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER);rp.topMargin=Ui.dp(this,84);root.addView(loadingRate,rp);
         hud=Ui.text(this,"",17,Ui.TEXT);hud.setGravity(Gravity.CENTER);Ui.pad(hud,16);hud.setBackground(Ui.background(0xb0000000,16,this));hud.setVisibility(View.GONE);
         root.addView(hud,new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER));
         top=Ui.column(this);top.setBackgroundColor(Color.TRANSPARENT);top.setPadding(Ui.dp(this,8),Ui.dp(this,8),Ui.dp(this,8),Ui.dp(this,10));
+        title=Ui.text(this,"",15,Ui.TEXT);counter=Ui.text(this,"",12,Ui.MUTED);
         LinearLayout toolbar=Ui.row(this);
-        toolbar.addView(Ui.button(this,"‹ 返回",this::back),new LinearLayout.LayoutParams(0,-2,1));
-        toolbar.addView(Ui.button(this,"▣ 小窗",this::enterPip),new LinearLayout.LayoutParams(0,-2,1));
-        toolbar.addView(Ui.button(this,"•••",this::moreMenu),new LinearLayout.LayoutParams(0,-2,1));for(int i=0;i<toolbar.getChildCount();i++)toolbar.getChildAt(i).setBackgroundColor(Color.TRANSPARENT);top.addView(toolbar);
-        
-        title=Ui.text(this,"正在打开视频…",16,Ui.TEXT);title.setGravity(Gravity.CENTER);title.setMaxLines(1);Ui.pad(title,6);top.addView(title);
-        counter=Ui.text(this,"",12,Ui.MUTED);counter.setGravity(Gravity.CENTER);counter.setPadding(Ui.dp(this,6),0,0,0);top.addView(counter);
+        toolbar.addView(new IconButton(this,"rotate","旋转",this::rotate),new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
+        toolbar.addView(new IconButton(this,"close","退出",this::back),new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
+        toolbar.addView(new IconButton(this,"pip","小窗",this::enterPip),new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
+        speedButton=new IconButton(this,"speed","播放速度",this::speedMenu);toolbar.addView(speedButton,new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));top.addView(toolbar);
         root.addView(top,new FrameLayout.LayoutParams(-1,-2,Gravity.TOP));
         bottom=Ui.column(this);bottom.setBackgroundColor(Color.TRANSPARENT);Ui.pad(bottom,8);
-        seek=new SeekBar(this);seek.setMax(10000);seek.setContentDescription("视频播放进度");bottom.addView(seek,new LinearLayout.LayoutParams(-1,Ui.dp(this,48)));
-        time=Ui.text(this,"00:00 / --:--",13,Ui.TEXT);time.setGravity(Gravity.CENTER);bottom.addView(time);
+        LinearLayout infoRow=Ui.row(this);
+        infoRow.addView(new IconButton(this,"info","媒体信息",this::playbackInfo),new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));
+        infoRow.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));bottom.addView(infoRow);
+        LinearLayout timeline=Ui.row(this);
+        time=Ui.text(this,"00:00 / --:--",11,Ui.TEXT);time.setGravity(Gravity.CENTER);timeline.addView(time,new LinearLayout.LayoutParams(Ui.dp(this,96),Ui.dp(this,48)));
+        seek=new HoldSeekBar(this);seek.setMax(10000);seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setContentDescription("长按后拖动播放进度并预览缩略图");timeline.addView(seek,new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));bottom.addView(timeline);
         LinearLayout buttons=Ui.row(this);buttons.setGravity(Gravity.CENTER);
-        abButton=circle(buttons,"A/B",this::cycleAb);
-        circle(buttons,"-10s",()->seekBy(-10000,false));circle(buttons,"-5s",()->seekBy(-5000,false));circle(buttons,"-1s",()->seekBy(-1000,false));circle(buttons,"-1f",()->seekBy(-1,true));
-        pauseButton=circle(buttons,"▶",this::playControl);
-        circle(buttons,"+1f",()->seekBy(1,true));circle(buttons,"+1s",()->seekBy(1000,false));circle(buttons,"+5s",()->seekBy(5000,false));circle(buttons,"+10s",()->seekBy(10000,false));
+        lockButton=new IconButton(this,"lock","锁定手势",this::toggleLock);buttons.addView(lockButton,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));
+        circle(buttons,"-10s",()->seekBy(-10000,false));circle(buttons,"-2s",()->seekBy(-2000,false));
+        pauseButton=new IconButton(this,"play","播放或暂停",this::playControl);buttons.addView(pauseButton,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));
+        circle(buttons,"+2s",()->seekBy(2000,false));circle(buttons,"+10s",()->seekBy(10000,false));abButton=circle(buttons,"A/B",this::cycleAb);
         bottom.addView(buttons,new LinearLayout.LayoutParams(-1,-2));
         buttons.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
-            int size=Math.min(Ui.dp(this,48),Math.max(1,(r-l)/10));
+            int size=Math.min(Ui.dp(this,48),Math.max(1,(r-l)/7));
             for(int i=0;i<buttons.getChildCount();i++){View child=buttons.getChildAt(i);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)child.getLayoutParams();if(lp.width!=size||lp.height!=size){lp.width=lp.height=size;child.setLayoutParams(lp);}}
         });
-        LinearLayout extras=Ui.row(this);extras.setGravity(Gravity.CENTER);extras.setPadding(0,Ui.dp(this,8),0,0);
-        circle(extras,"☆",()->bookmark(true)).setContentDescription("收藏");
-        speedButton=circle(extras,"◴",this::speedMenu);speedButton.setContentDescription("播放速度");
-        randomButton=circle(extras,"⇄",this::toggleRandom);randomButton.setContentDescription("随机播放开关");
-        circle(extras,"适屏",this::fitVideo).setContentDescription("恢复适屏，启用画面上下滑切片");
-        circle(extras,"⟳",this::rotate).setContentDescription("旋转");
-        lockButton=circle(extras,"锁",this::toggleLock);bottom.addView(extras);
+        mediaInfo=Ui.text(this,"",13,Ui.TEXT);Ui.pad(mediaInfo,16);mediaInfo.setBackground(Ui.background(0xee1d1d1f,16,this));mediaInfo.setVisibility(View.GONE);
+        FrameLayout.LayoutParams ip=new FrameLayout.LayoutParams(-1,-2,Gravity.TOP);ip.topMargin=Ui.dp(this,96);ip.leftMargin=ip.rightMargin=Ui.dp(this,16);root.addView(mediaInfo,ip);mediaInfo.setOnClickListener(v->mediaInfo.setVisibility(View.GONE));
         preview=new ImageView(this);preview.setScaleType(ImageView.ScaleType.FIT_CENTER);preview.setVisibility(View.GONE);
-        FrameLayout.LayoutParams previewParams=new FrameLayout.LayoutParams(Ui.dp(this,160),Ui.dp(this,90),Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);previewParams.bottomMargin=Ui.dp(this,250);root.addView(preview,previewParams);
-        previewTime=Ui.text(this,"",12,Ui.TEXT);previewTime.setGravity(Gravity.CENTER);previewTime.setVisibility(View.GONE);FrameLayout.LayoutParams pt=new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);pt.bottomMargin=Ui.dp(this,230);root.addView(previewTime,pt);
+        FrameLayout.LayoutParams previewParams=new FrameLayout.LayoutParams(Ui.dp(this,160),Ui.dp(this,90),Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);previewParams.bottomMargin=Ui.dp(this,176);root.addView(preview,previewParams);
+        previewTime=Ui.text(this,"",12,Ui.TEXT);previewTime.setGravity(Gravity.CENTER);previewTime.setVisibility(View.GONE);FrameLayout.LayoutParams pt=new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);pt.bottomMargin=Ui.dp(this,154);root.addView(previewTime,pt);
         root.addView(bottom,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
+        bottom.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
+            int margin=root.getHeight()-t-Ui.dp(this,48);
+            FrameLayout.LayoutParams imageParams=(FrameLayout.LayoutParams)preview.getLayoutParams();imageParams.bottomMargin=margin+Ui.dp(this,22);preview.setLayoutParams(imageParams);
+            FrameLayout.LayoutParams labelParams=(FrameLayout.LayoutParams)previewTime.getLayoutParams();labelParams.bottomMargin=margin;previewTime.setLayoutParams(labelParams);
+        });
         errorBox=Ui.column(this);errorBox.setGravity(Gravity.CENTER);Ui.pad(errorBox,20);errorBox.setBackground(Ui.background(0xdd17232f,14,this));
         errorMessage=Ui.text(this,"",15,Ui.TEXT);errorMessage.setGravity(Gravity.CENTER);errorBox.addView(errorMessage);
         errorBox.addView(Ui.button(this,"重试",()->{errorBox.setVisibility(View.GONE);if(player!=null){player.prepare();player.play();}else loadSession();}));
@@ -135,7 +150,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             public void onStartTrackingTouch(SeekBar b){gestures.cancelGesture();scrubbing=true;handler.removeCallbacks(hideControls);if(player!=null){scrubResume=player.getPlayWhenReady();player.pause();}}
             public void onProgressChanged(SeekBar b,int p,boolean fromUser){if(fromUser && player!=null && player.getDuration()>0){long target=(long)(player.getDuration()*(p/10000.0));time.setText(Ui.time(target)+" / "+Ui.time(player.getDuration()));showPreview(target);}}
-            public void onStopTrackingTouch(SeekBar b){if(player!=null){if(player.getDuration()>0)player.seekTo((long)(player.getDuration()*(b.getProgress()/10000.0)));player.setPlayWhenReady(scrubResume);}scrubbing=false;preview.setVisibility(View.GONE);previewTime.setVisibility(View.GONE);checkpoint();showControls();}
+            public void onStopTrackingTouch(SeekBar b){if(player!=null){if(player.getDuration()>0)player.seekTo((long)(player.getDuration()*(b.getProgress()/10000.0)));player.setPlayWhenReady(scrubResume);}cancelScrub();checkpoint();showControls();}
         });
         setContentView(root);
         if(Build.VERSION.SDK_INT>=30){
@@ -163,7 +178,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
             source=new SourceBundle(server);
             DefaultLoadControl load=new DefaultLoadControl.Builder().setBufferDurationsMs(10000,30000,1200,2200).setBackBuffer(30000,true).setTargetBufferBytes(64*1024*1024).build();
             player=new ExoPlayer.Builder(this,new DefaultRenderersFactory(this).setEnableDecoderFallback(true))
-                    .setMediaSourceFactory(new DefaultMediaSourceFactory(NextVideoCache.factory(this,source.factory))).setLoadControl(load).build();
+                    .setMediaSourceFactory(new DefaultMediaSourceFactory(measuredSource())).setLoadControl(load).build();
             player.setAudioAttributes(new AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),true);
             player.setHandleAudioBecomingNoisy(true);player.setRepeatMode(Player.REPEAT_MODE_ONE);video.setPlayer(player);
             trick=new TrickPlayController(player,this::persistentHint);trick.setBaseSpeed(session.speed);
@@ -178,7 +193,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
                     showError("播放失败："+e.getErrorCodeName()+"\n请检查网络、读取权限及视频编码。可重试或切换其他视频。");checkpoint();
                 }
                 @Override public void onTracksChanged(Tracks tracks){if(trick!=null)trick.tracksChanged();}
-                @Override public void onVideoSizeChanged(VideoSize size){gestures.cancelGesture();transform.onVideoSize(size);if(server!=null && app.store.sourceNative(server.id) && !transform.inspectMode()){transform.toggleNative(root.getWidth()/2f,root.getHeight()/2f);counter.setText("原始尺寸 · 画面内拖动 / 黑边上下切片 · 适屏按钮复位");}updatePipParams();}
+                @Override public void onVideoSizeChanged(VideoSize size){gestures.cancelGesture();transform.onVideoSize(size);counter.setText(transform.label()+" · 上下滑切片");updatePipParams();}
                 @Override public void onPlayWhenReadyChanged(boolean ready,int reason){
                     if(!ready && (reason==Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS || reason==Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY)){
                         scrubResume=false;cancelScrub();if(trick!=null)trick.doNotResumeAfterHold();gestures.cancelGesture();
@@ -191,7 +206,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     }
     private void openCurrent(long position,boolean playing){
         if(player==null || source==null || session==null)return;
-        clearPreviews();loopA=loopB=-1;updateAb();transform.newVideo();
+        clearPreviews();loopA=loopB=-1;updateAb();transform.setPreset(app.store.sourcePreset(server.id));transform.newVideo();
         syncRandom();randomOrder.visit(session.current().path);
         errorBox.setVisibility(View.GONE);RemoteItem item=session.current();
         MediaItem.Builder media=new MediaItem.Builder().setUri(source.uri(item.path)).setMediaId(session.id+":"+session.index)
@@ -213,6 +228,20 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     }
     private void flash(String text){persistentHint(text);handler.postDelayed(hideHint,1600);}
     private void showError(String text){buffering.setVisibility(View.GONE);errorMessage.setText(text);if(!inPip())errorBox.setVisibility(View.VISIBLE);showControls();}
+    private void toggleControls(){
+        handler.removeCallbacks(hideControls);
+        boolean shown=top.getVisibility()==View.VISIBLE || bottom.getVisibility()==View.VISIBLE;
+        if(shown){mediaInfo.setVisibility(View.GONE);top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);}else showControls();
+    }
+    private androidx.media3.datasource.DataSource.Factory measuredSource(){
+        androidx.media3.datasource.DataSource.Factory cached=NextVideoCache.factory(this,source.factory);
+        return ()->{androidx.media3.datasource.DataSource data=cached.createDataSource();data.addTransferListener(new androidx.media3.datasource.TransferListener(){
+            public void onTransferInitializing(androidx.media3.datasource.DataSource s,androidx.media3.datasource.DataSpec spec,boolean network){}
+            public void onTransferStart(androidx.media3.datasource.DataSource s,androidx.media3.datasource.DataSpec spec,boolean network){}
+            public void onBytesTransferred(androidx.media3.datasource.DataSource s,androidx.media3.datasource.DataSpec spec,boolean network,int bytes){if(network)loadedBytes.addAndGet(bytes);}
+            public void onTransferEnd(androidx.media3.datasource.DataSource s,androidx.media3.datasource.DataSpec spec,boolean network){}
+        });return data;};
+    }
     private void togglePlayback(){
         if(player==null){showControls();return;}
         player.setPlayWhenReady(!player.getPlayWhenReady());
@@ -222,10 +251,8 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     @Override public void tap(){gestures.performClick();}
     @Override public boolean inspectAt(float x,float y){return transform!=null && transform.inspectAt(x,y);}
     @Override public boolean inspectMode(){return transform!=null && transform.inspectMode();}
-    @Override public void doubleTap(float x,float y){
-        if(inPip() || transform==null)return;
-        boolean changed=transform.toggleNative(x,y);if(changed){if(server!=null && trick!=null)app.store.saveSourcePlayback(server.id,trick.baseSpeed(),transform.inspectMode());counter.setText(transform.inspectMode()?"原始尺寸 · 画面内拖动 / 黑边上下切片":transform.label());}else flash("视频尺寸尚未就绪");
-    }
+    @Override public void doubleTap(float x,float y){if(!inPip())togglePlayback();}
+    @Override public void tripleTap(){if(inPip())return;transform.cyclePreset();if(server!=null)app.store.saveSourcePreset(server.id,transform.presetIndex());counter.setText(transform.label()+" · 上下滑切片");}
     @Override public void panPixels(float dx,float dy){if(transform!=null)transform.pan(dx,dy);}
     @Override public void pinch(float factor,float previousX,float previousY,float x,float y){
         if(transform==null || inPip())return;
@@ -254,7 +281,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(trick==null)return;gestures.cancelGesture();handler.removeCallbacks(hideControls);
         String[] labels=new String[SpeedScale.COUNT];for(int i=0;i<labels.length;i++)labels[i]=SpeedScale.label(SpeedScale.at(i))+(i==0?" · 静音慢放":"");
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle("播放速度").setSingleChoiceItems(labels,SpeedScale.nearest(trick.baseSpeed()),(d,which)->{
-            if(trick!=null){trick.setBaseSpeed(SpeedScale.at(which));session.speed=trick.baseSpeed();app.store.saveSourcePlayback(server.id,session.speed,transform.inspectMode());speedButton.setContentDescription("播放速度 "+SpeedScale.label(trick.baseSpeed()));checkpoint();if(which==0)flash("0.05× 使用静音视频慢放");}d.dismiss();
+            if(trick!=null){trick.setBaseSpeed(SpeedScale.at(which));session.speed=trick.baseSpeed();app.store.saveSourcePlayback(server.id,session.speed,transform.presetIndex()==2);speedButton.setContentDescription("播放速度 "+SpeedScale.label(trick.baseSpeed()));checkpoint();if(which==0)flash("0.05× 使用静音视频慢放");}d.dismiss();
         }).setNegativeButton("关闭",null).create();dialog.setOnDismissListener(d->showControls());dialog.show();
     }
     private java.util.List<String> queuePaths(){java.util.List<String> paths=new java.util.ArrayList<>();for(RemoteItem item:session.queue)paths.add(item.path);return paths;}
@@ -262,8 +289,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(session==null)return;
         String key=session.serverId+"\u0000"+session.folder;
         randomOrder=app.randomOrders.computeIfAbsent(key,k->new RandomOrder());
-        usingRandom=app.store.randomMode();randomButton.setTextColor(usingRandom?0xff65b5ff:Ui.TEXT);
-        randomButton.setContentDescription(usingRandom?"随机播放已开启":"随机播放已关闭");
+        usingRandom=app.store.randomMode();
     }
     private void toggleRandom(){gestures.cancelGesture();app.store.setRandomMode(!app.store.randomMode());syncRandom();if(session!=null){randomOrder.visit(session.current().path);preloadNext();}showControls();}
     private void preloadNext(){
@@ -273,11 +299,11 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     }
     private Button circle(LinearLayout row,String label,Runnable action){
         Button b=Ui.button(this,label,action);b.setTextSize(11);b.setPadding(0,0,0,0);b.setMinWidth(0);b.setMinimumWidth(0);b.setMinHeight(0);b.setMinimumHeight(0);
-        android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();bg.setShape(android.graphics.drawable.GradientDrawable.OVAL);bg.setColor(Ui.PANEL);bg.setStroke(Ui.dp(this,1),0xff444448);b.setBackground(bg);
+        android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();bg.setShape(android.graphics.drawable.GradientDrawable.OVAL);bg.setColor(0x22000000);bg.setStroke(Ui.dp(this,1),0xff999999);b.setBackground(bg);
         row.addView(b,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));return b;
     }
     private void updateAb(){if(abButton!=null){abButton.setText(loopB>loopA&&loopA>=0?"A↔B":loopA>=0?"A/•":"A/B");abButton.setTextColor(loopA>=0?0xff65b5ff:Ui.TEXT);}}
-    private void fitVideo(){gestures.cancelGesture();transform.resetFit();if(server!=null&&trick!=null)app.store.saveSourcePlayback(server.id,trick.baseSpeed(),false);counter.setText("适应屏幕 · 上滑下一条 / 下滑上一条");showControls();}
+    private void fitVideo(){gestures.cancelGesture();transform.resetFit();if(server!=null)app.store.saveSourcePreset(server.id,0);counter.setText(transform.label()+" · 上下滑切片");showControls();}
     private void cycleAb(){
         if(player==null||!player.isCurrentMediaItemSeekable())return;gestures.cancelGesture();
         if(loopA<0){loopA=player.getCurrentPosition();loopB=-1;}
@@ -290,28 +316,19 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(player!=null && loopA>=0){loopA=loopB=-1;updateAb();player.play();showControls();checkpoint();return;}
         togglePlayback();
     }
-    private void toggleLock(){gestures.cancelGesture();gestureLocked=!gestureLocked;lockButton.setText(gestureLocked?"解锁":"锁");handler.removeCallbacks(hideControls);showControls();if(gestureLocked)handler.removeCallbacks(hideControls);}
-    private void bookmark(boolean favorite){if(session==null || player==null)return;app.store.bookmark(server.id,session.current().path,session.current().name,favorite?-1:player.getCurrentPosition());Ui.toast(this,favorite?"已收藏":"已添加时间点书签");}
+    private void toggleLock(){gestures.cancelGesture();gestureLocked=!gestureLocked;lockButton.setText(gestureLocked?"解锁":"锁");lockButton.setTextColor(gestureLocked?0xff65b5ff:Ui.TEXT);lockButton.setContentDescription(gestureLocked?"解锁手势":"锁定手势");handler.removeCallbacks(hideControls);showControls();if(gestureLocked)handler.removeCallbacks(hideControls);}
     private void seekBy(long delta,boolean frame){
         if(player==null || !player.isCurrentMediaItemSeekable())return;
         gestures.cancelGesture();long step=delta;
         if(frame){androidx.media3.common.Format f=player.getVideoFormat();if(f==null || f.frameRate<=0){Ui.toast(this,"帧率未知，无法按帧定位");return;}step=Math.round(1000d/f.frameRate)*(delta<0?-1:1);player.pause();}
         player.setSeekParameters(SeekParameters.EXACT);long target=Math.max(0,player.getCurrentPosition()+step);long duration=player.getDuration();if(duration>0)target=Math.min(duration-1,target);player.seekTo(target);checkpoint();showControls();
     }
-    private void moreMenu(){
-        if(player==null)return;gestures.cancelGesture();handler.removeCallbacks(hideControls);
-        LinearLayout panel=Ui.column(this);Ui.pad(panel,16);
-        panel.addView(Ui.text(this,"底部 A/B：设 A → 设 B 并循环；播放键退出区间循环。1f 按轨道帧率定位。",13,Ui.MUTED));
-        panel.addView(Ui.button(this,"＋ 时间点书签",()->bookmark(false)));
-        panel.addView(Ui.button(this,"播放信息",this::playbackInfo));
-        ScrollView scroll=new ScrollView(this);scroll.addView(panel);
-        AlertDialog d=new AlertDialog.Builder(this).setTitle("播放工具").setView(scroll).setNegativeButton("关闭",null).create();d.setOnDismissListener(v->showControls());d.show();
-    }
     private void playbackInfo(){
-        if(player==null)return;androidx.media3.common.Format f=player.getVideoFormat();long elapsed=Math.max(1,SystemClock.elapsedRealtime()-networkStartTime);long bytes=android.net.TrafficStats.getUidRxBytes(android.os.Process.myUid())-networkStartBytes;
+        if(mediaInfo.getVisibility()==View.VISIBLE){mediaInfo.setVisibility(View.GONE);showControls();return;}
+        if(player==null)return;handler.removeCallbacks(hideControls);androidx.media3.common.Format f=player.getVideoFormat();long elapsed=Math.max(1,SystemClock.elapsedRealtime()-networkStartTime);long bytes=android.net.TrafficStats.getUidRxBytes(android.os.Process.myUid())-networkStartBytes;
         String info=f==null?"视频轨尚未就绪":("编码  "+f.sampleMimeType+" / "+f.codecs+"\n尺寸  "+f.width+" × "+f.height+"\n帧率  "+(f.frameRate>0?f.frameRate:"未知")+"\n码率  "+(f.bitrate>0?Ui.size(f.bitrate/8)+"/s":"未知"));
         info+="\n播放速度  "+SpeedScale.label(player.getPlaybackParameters().speed)+"\n缓冲  "+Ui.time(player.getTotalBufferedDuration())+"\n本次平均接收  "+Ui.size(Math.max(0,bytes)*1000/elapsed)+"/s（含预读）\n下一条预读  "+app.store.preloadMb()+" MB\n画面  "+transform.label();
-        new AlertDialog.Builder(this).setTitle("播放信息").setMessage(info).setPositiveButton("关闭",null).show();
+        mediaInfo.setText(session.current().name+"\n"+Ui.time(player.getDuration())+" · "+Ui.size(session.current().size)+"\n"+info);mediaInfo.setVisibility(View.VISIBLE);
     }
     private void capturePreview(long position){
         if(scrubbing || !player.isPlaying() || SystemClock.uptimeMillis()-lastPreviewCapture<3000)return;
@@ -321,11 +338,12 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         while(thumbnails.size()>160){java.util.Map.Entry<Long,android.graphics.Bitmap> removed=thumbnails.pollFirstEntry();removed.getValue().recycle();}
     }
     private void showPreview(long target){
+        previewTarget=target;
         java.util.Map.Entry<Long,android.graphics.Bitmap> entry=thumbnails.floorEntry(target);if(entry==null)entry=thumbnails.ceilingEntry(target);
         previewTime.setVisibility(View.VISIBLE);
         if(entry==null || Math.abs(entry.getKey()-target)>10000){preview.setVisibility(View.GONE);previewTime.setText(Ui.time(target)+" · 正在获取预览…");
             if(pendingPreview!=null)handler.removeCallbacks(pendingPreview);
-            pendingPreview=()->{if(session==null||server==null||!scrubbing)return;RemoteItem item=session.current();framePreview.request(server,item.path,item.size,target,b->handler.post(()->{if(isDestroyed()||!scrubbing){if(b!=null)b.recycle();return;}if(b==null){previewTime.setText(Ui.time(target)+" · 预览不可用");return;}android.graphics.Bitmap old=thumbnails.put(target,b);if(old!=null)old.recycle();while(thumbnails.size()>160)thumbnails.pollFirstEntry().getValue().recycle();preview.setImageBitmap(b);preview.setVisibility(View.VISIBLE);previewTime.setText(Ui.time(target)+" · 邻近关键帧");}));};
+            pendingPreview=()->{if(session==null||server==null||!scrubbing)return;RemoteItem item=session.current();framePreview.request(server,item.path,item.size,target,b->handler.post(()->{if(isDestroyed()||!scrubbing||target!=previewTarget){if(b!=null)b.recycle();return;}if(b==null){previewTime.setText(Ui.time(target)+" · 预览不可用");return;}android.graphics.Bitmap old=thumbnails.put(target,b);if(old!=null)old.recycle();while(thumbnails.size()>160)thumbnails.pollFirstEntry().getValue().recycle();preview.setImageBitmap(b);preview.setVisibility(View.VISIBLE);previewTime.setText(Ui.time(target)+" · 邻近关键帧");}));};
             handler.postDelayed(pendingPreview,300);return;}
         preview.setImageBitmap(entry.getValue());preview.setVisibility(View.VISIBLE);previewTime.setText(Ui.time(target)+" · 预览 "+Ui.time(entry.getKey()));
     }
@@ -349,7 +367,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(player==null)return;
         cancelScrub();
         if(!getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)){Ui.toast(this,"设备不支持系统画中画");return;}
-        gestures.cancelGesture();transform.resetFit();checkpoint();handler.removeCallbacks(hideControls);top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);hud.setVisibility(View.GONE);errorBox.setVisibility(View.GONE);buffering.setVisibility(View.GONE);
+        gestures.cancelGesture();transform.resetFit();checkpoint();mediaInfo.setVisibility(View.GONE);handler.removeCallbacks(hideControls);top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);hud.setVisibility(View.GONE);errorBox.setVisibility(View.GONE);buffering.setVisibility(View.GONE);
         try{pipTransition=true;if(!enterPictureInPictureMode(pipParams())){pipTransition=false;showControls();Ui.toast(this,"请在系统设置中允许本应用使用画中画");}}
         catch(IllegalStateException|IllegalArgumentException e){pipTransition=false;showControls();Ui.toast(this,"无法进入画中画，请检查系统权限");}
     }
@@ -362,7 +380,9 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(Build.VERSION.SDK_INT>=30){WindowInsetsController c=getWindow().getInsetsController();if(c!=null){c.hide(WindowInsets.Type.systemBars());c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);}}
         else getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
-    private void cancelScrub(){
+    void cancelScrub(){
+        if(seek!=null)seek.cancelTracking();
+        previewTarget=-1;if(pendingPreview!=null)handler.removeCallbacks(pendingPreview);framePreview.cancel();if(preview!=null)preview.setVisibility(View.GONE);if(previewTime!=null)previewTime.setVisibility(View.GONE);
         if(!scrubbing)return;scrubbing=false;
         if(player!=null)player.setPlayWhenReady(scrubResume);
     }
@@ -398,7 +418,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     @Override public boolean dispatchTouchEvent(MotionEvent event){
         if(gestureLocked && !hit(lockButton,event))return true;
         if(event.getActionMasked()==MotionEvent.ACTION_DOWN && gestures!=null
-                && (hit(top,event)||hit(bottom,event)||hit(errorBox,event)))gestures.cancelGesture();
+                && (hit(top,event)||hit(bottom,event)||hit(errorBox,event)||hit(mediaInfo,event)))gestures.cancelGesture();
         return super.dispatchTouchEvent(event);
     }
     private boolean hit(View view,MotionEvent event){

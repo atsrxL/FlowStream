@@ -1,0 +1,7 @@
+Starting: Intent { cmp=dev.flowstream.player.debug/dev.flowstream.player.ui.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: dev.flowstream.player.debug/dev.flowstream.player.ui.MainActivity
+TotalTime: 873
+WaitTime: 876
+Complete

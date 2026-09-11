@@ -16,71 +16,58 @@ import java.util.*;
 public final class MainActivity extends BackActivity {
     private FlowApp app;
     private TextView heading, path, empty;
-    private ListView list;
+    private GridView list;
     private ProgressBar progress;
     private Button thumbnailsToggle;
     private Switch randomToggle;
     private String serverId="", folder="";
     private Server server;
-    private boolean history;
+
     private int generation;
     private List<RemoteItem> entries = new ArrayList<>();
-    private List<Session> sessions = new ArrayList<>();
+
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state); app=(FlowApp)getApplication();
-        LinearLayout root=Ui.column(this); root.setBackgroundColor(Ui.BG);
-        LinearLayout bar=Ui.row(this); Ui.pad(bar,10); bar.setBackgroundColor(Ui.PANEL);
-        heading=Ui.text(this,"流映 FlowStream",21,Ui.TEXT); bar.addView(heading,new LinearLayout.LayoutParams(0,-2,1));
-        bar.addView(Ui.button(this,"设置",()->startActivity(new Intent(this,SettingsActivity.class)))); root.addView(bar);
-        LinearLayout tabs=Ui.row(this);
-        tabs.addView(Ui.button(this,"文件",()->{history=false; reload();}),new LinearLayout.LayoutParams(0,-2,1));
-        tabs.addView(Ui.button(this,"会话历史",()->{history=true; reload();}),new LinearLayout.LayoutParams(0,-2,1)); root.addView(tabs);tabs.addView(Ui.button(this,"收藏",this::showBookmarks),new LinearLayout.LayoutParams(0,-2,1));
+        LinearLayout root=Ui.column(this);root.setBackgroundColor(Ui.bg(this));
+        LinearLayout bar=Ui.row(this);bar.setPadding(Ui.dp(this,16),Ui.dp(this,6),Ui.dp(this,16),Ui.dp(this,8));
+        thumbnailsToggle=new IconButton(this,"grid","切换列表或双列缩略图",()->{app.store.setThumbnailMode(!app.store.thumbnailMode());showRows();});
+        thumbnailsToggle.setTextColor(Ui.fg(this));thumbnailsToggle.setBackground(Ui.background(Ui.panel(this),28,this));bar.addView(thumbnailsToggle,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));
+        bar.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));
+        Button settings=new IconButton(this,"more","设置",()->startActivity(new Intent(this,SettingsActivity.class)));settings.setTextColor(Ui.fg(this));settings.setBackground(Ui.background(Ui.panel(this),28,this));bar.addView(settings,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));root.addView(bar);
+        heading=Ui.text(this,"文件",30,Ui.fg(this));heading.setMaxLines(1);heading.setEllipsize(android.text.TextUtils.TruncateAt.END);heading.setTypeface(null,android.graphics.Typeface.BOLD);heading.setPadding(Ui.dp(this,18),Ui.dp(this,8),Ui.dp(this,18),Ui.dp(this,6));root.addView(heading);
+        LinearLayout tabs=Ui.row(this);tabs.setBackground(Ui.background(Ui.panel(this),32,this));tabs.setPadding(Ui.dp(this,8),0,Ui.dp(this,8),0);
+        addNavigation(tabs,"files","文件",()->{reload();});
+        addNavigation(tabs,"settings","设置",()->startActivity(new Intent(this,SettingsActivity.class)));
         LinearLayout crumbs=Ui.row(this); crumbs.setPadding(Ui.dp(this,10),0,Ui.dp(this,8),0);
-        path=Ui.text(this,"",13,Ui.MUTED); crumbs.addView(path,new LinearLayout.LayoutParams(0,-2,1));
-        crumbs.addView(Ui.button(this,"上一级",()->{if(!history && !folder.isEmpty()){folder=MediaPaths.parent(folder);reload();}}));
-        crumbs.addView(Ui.button(this,"刷新",this::reload)); root.addView(crumbs);
+        path=Ui.text(this,"",12,0xff85858c); crumbs.addView(path,new LinearLayout.LayoutParams(0,-2,1));
+        Button up=new IconButton(this,"back","上一级",()->{if(!folder.isEmpty()){folder=MediaPaths.parent(folder);reload();}});up.setTextColor(Ui.fg(this));crumbs.addView(up,new LinearLayout.LayoutParams(Ui.dp(this,40),Ui.dp(this,40)));
+        Button refresh=new IconButton(this,"rotate","刷新",this::reload);refresh.setTextColor(Ui.fg(this));crumbs.addView(refresh,new LinearLayout.LayoutParams(Ui.dp(this,40),Ui.dp(this,40))); root.addView(crumbs);
         LinearLayout modes=Ui.row(this);
-        thumbnailsToggle=Ui.button(this,"缩略图",()->{app.store.setThumbnailMode(!app.store.thumbnailMode());thumbnailsToggle.setText(app.store.thumbnailMode()?"▧ 缩略图":"☰ 列表");showRows();});modes.addView(thumbnailsToggle,new LinearLayout.LayoutParams(0,-2,1));
-        Switch random=new Switch(this);randomToggle=random;random.setText("随机播放");random.setTextColor(Ui.TEXT);random.setChecked(app.store.randomMode());random.setOnCheckedChangeListener((v,on)->app.store.setRandomMode(on));modes.addView(random,new LinearLayout.LayoutParams(0,-2,1));root.addView(modes);
+        modes.setPadding(Ui.dp(this,18),0,Ui.dp(this,18),Ui.dp(this,8));
+        TextView modeHint=Ui.text(this,"当前文件夹",12,0xff96969d);modes.addView(modeHint,new LinearLayout.LayoutParams(0,-2,1));
+        Switch random=new Switch(this);randomToggle=random;random.setText("随机");random.setTextColor(Ui.muted(this));random.setTextSize(12);random.setChecked(app.store.randomMode());random.setOnCheckedChangeListener((v,on)->app.store.setRandomMode(on));modes.addView(random);root.addView(modes);
         progress=new ProgressBar(this); root.addView(progress,new LinearLayout.LayoutParams(-1,Ui.dp(this,36)));
-        FrameLayout content=new FrameLayout(this); list=new ListView(this); list.setDividerHeight(1);
-        list.setDivider(new android.graphics.drawable.ColorDrawable(Ui.PANEL)); content.addView(list,new FrameLayout.LayoutParams(-1,-1));
+        FrameLayout content=new FrameLayout(this); list=new GridView(this);list.setNumColumns(1);list.setStretchMode(GridView.STRETCH_COLUMN_WIDTH);list.setPadding(Ui.dp(this,12),0,Ui.dp(this,12),0);list.setClipToPadding(false);list.setHorizontalSpacing(Ui.dp(this,8));list.setVerticalSpacing(Ui.dp(this,8)); content.addView(list,new FrameLayout.LayoutParams(-1,-1));
         empty=Ui.text(this,"在设置中添加并选择服务器\n支持 SMB / Samba、WebDAV",16,Ui.MUTED);
         empty.setGravity(Gravity.CENTER); Ui.pad(empty,24); content.addView(empty,new FrameLayout.LayoutParams(-1,-1)); list.setEmptyView(empty);
-        root.addView(content,new LinearLayout.LayoutParams(-1,0,1)); setContentView(root); Ui.safeInsets(this,root);
+        root.addView(content,new LinearLayout.LayoutParams(-1,0,1)); root.addView(tabs,new LinearLayout.LayoutParams(-1,Ui.dp(this,70)));setContentView(root); Ui.safeInsets(this,root);Ui.systemBars(this);
         list.setOnItemClickListener((p,v,pos,id)->open(pos));
-        list.setOnItemLongClickListener((p,v,pos,id)->{
-            if(!history || pos>=sessions.size())return false;
-            Session s=sessions.get(pos);
-            new AlertDialog.Builder(this).setTitle("删除这条会话？").setMessage("仅清除本机记录，不会删除服务器视频。")
-                    .setNegativeButton("取消",null).setPositiveButton("删除",(d,w)->app.disk.execute(()->{app.store.deleteSession(s.id);app.main.post(this::reload);})).show();return true;
-        });
     }
-    private void showBookmarks(){
-        org.json.JSONArray all=app.store.bookmarks();String[] labels=new String[all.length()];
-        for(int i=0;i<labels.length;i++){org.json.JSONObject b=all.optJSONObject(i);labels[i]=(b.optLong("position",-1)<0?"☆ ":"⚑ "+Ui.time(b.optLong("position"))+" · ")+b.optString("name");}
-        if(labels.length==0){Ui.toast(this,"还没有收藏或书签，可在播放器中添加");return;}
-        new AlertDialog.Builder(this).setTitle("收藏与时间点书签").setItems(labels,(d,index)->{
-            org.json.JSONObject b=all.optJSONObject(index);
-            new AlertDialog.Builder(this).setTitle(labels[index]).setItems(new String[]{"播放","删除"},(dialog,action)->{
-                if(action==1){app.store.removeBookmark(index);showBookmarks();return;}
-                app.disk.execute(()->{try{Server endpoint=app.store.server(b.getString("server"));java.util.List<RemoteItem> q=java.util.Collections.singletonList(new RemoteItem(b.getString("path"),b.getString("name"),false,0));String id=app.store.newSession(endpoint,MediaPaths.parent(b.getString("path")),q,0);app.store.checkpoint(id,0,Math.max(0,b.optLong("position")),0,app.store.sourceSpeed(endpoint.id));app.main.post(()->launch(id));}catch(Exception e){app.main.post(()->Ui.toast(this,Ui.error(e)));}});
-            }).show();
-        }).setNegativeButton("关闭",null).show();
+    private void addNavigation(LinearLayout row,String icon,String label,Runnable action){
+        LinearLayout col=Ui.column(this);col.setGravity(Gravity.CENTER);Button button=new IconButton(this,icon,label,action);button.setTextColor(label.equals("文件")?0xff0784ff:Ui.fg(this));col.addView(button,new LinearLayout.LayoutParams(Ui.dp(this,44),Ui.dp(this,42)));TextView text=Ui.text(this,label,11,Ui.muted(this));text.setGravity(Gravity.CENTER);col.addView(text);col.setOnClickListener(v->action.run());row.addView(col,new LinearLayout.LayoutParams(0,-1,1));
+    }
+    private View browserRow(RemoteItem item,String detail,Server source){
+        LinearLayout row=Ui.row(this);row.setPadding(Ui.dp(this,6),Ui.dp(this,8),Ui.dp(this,6),Ui.dp(this,8));
+        ImageView image=new ImageView(this);image.setScaleType(ImageView.ScaleType.CENTER_CROP);image.setBackground(Ui.background(Ui.panel(this),14,this));image.setClipToOutline(true);image.setImageResource(item.directory?dev.flowstream.player.R.drawable.ic_folder:dev.flowstream.player.R.drawable.ic_launcher);row.addView(image,new LinearLayout.LayoutParams(Ui.dp(this,104),Ui.dp(this,64)));
+        LinearLayout text=Ui.column(this);text.setPadding(Ui.dp(this,12),0,0,0);TextView name=Ui.text(this,item.name,15,Ui.fg(this));name.setMaxLines(2);name.setEllipsize(android.text.TextUtils.TruncateAt.END);text.addView(name);TextView info=Ui.text(this,detail,12,0xff919197);info.setPadding(0,Ui.dp(this,5),0,0);text.addView(info);row.addView(text,new LinearLayout.LayoutParams(0,-2,1));
+        if(!item.directory&&source!=null){final int token=generation;app.thumbnails.load(source,item,b->{if(!stale(token)&&b!=null)image.setImageBitmap(b);});}return row;
     }
     @Override protected void onResume(){super.onResume();randomToggle.setChecked(app.store.randomMode());thumbnailsToggle.setText(app.store.thumbnailMode()?"▧ 缩略图":"☰ 列表");reload();}
     private void reload(){
         final int token=++generation; progress.setVisibility(View.VISIBLE); empty.setText("正在读取…");
-        if(history){
-            heading.setText("会话历史");path.setText("最近 100 个会话 · 点击续播 · 长按删除");
-            app.disk.execute(()->{
-                try{List<Session> result=app.store.history();app.main.post(()->{if(stale(token))return;sessions=result;progress.setVisibility(View.GONE);showRows();});}
-                catch(Exception e){fail(token,e);}
-            });return;
-        }
         String active=app.store.activeServer();
         if(!active.equals(serverId)){serverId=active;folder=app.store.lastFolder(active);}
-        heading.setText("流映 FlowStream");path.setText(folder.isEmpty()?"根目录":folder);
+        heading.setText("文件");path.setText(folder.isEmpty()?"根目录":folder);
         if(active.isEmpty()){entries.clear();progress.setVisibility(View.GONE);showRows();empty.setText("还没有选择服务器\n打开右上角设置，添加 SMB 或 WebDAV 来源");return;}
         final String requestedFolder=folder;
         app.disk.execute(()->{
@@ -93,32 +80,34 @@ public final class MainActivity extends BackActivity {
         });
     }
     private boolean stale(int token){return token!=generation || isDestroyed() || isFinishing();}
-    private void fail(int token,Exception e){app.main.post(()->{if(stale(token))return;progress.setVisibility(View.GONE);entries.clear();sessions.clear();showRows();empty.setText(Ui.error(e)+"\n可点击刷新重试，或返回上一级");});}
+    private void fail(int token,Exception e){app.main.post(()->{if(stale(token))return;progress.setVisibility(View.GONE);entries.clear();showRows();empty.setText(Ui.error(e)+"\n可点击刷新重试，或返回上一级");});}
     private void showRows(){
-        empty.setText(history?"尚无播放会话":"这个目录没有可显示的视频或子目录");
-        final boolean showingHistory=history;
-        final List<Session> visibleSessions=new ArrayList<>(sessions);
+        empty.setText("这个目录没有可显示的视频或子目录");
+
+        final boolean grid=app.store.thumbnailMode();list.setNumColumns(grid?2:1);
+
         final List<RemoteItem> visibleEntries=new ArrayList<>(entries);
         list.setAdapter(new BaseAdapter(){
-            @Override public int getCount(){return showingHistory?visibleSessions.size():visibleEntries.size();}
-            @Override public Object getItem(int p){return showingHistory?visibleSessions.get(p):visibleEntries.get(p);}
+            @Override public int getCount(){return visibleEntries.size();}
+            @Override public Object getItem(int p){return visibleEntries.get(p);}
             @Override public long getItemId(int p){return p;}
             @Override public View getView(int p,View convert,ViewGroup parent){
-                if(showingHistory){Session s=visibleSessions.get(p);return Ui.listRow(MainActivity.this,"↺",s.queue.get(0).name,
-                        s.serverName+" · "+Ui.time(s.position)+" / "+Ui.time(s.duration)+" · "+DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT).format(new Date(s.updated)));}
                 RemoteItem item=visibleEntries.get(p);
-                LinearLayout row=(LinearLayout)Ui.listRow(MainActivity.this,item.directory?"▤":"▶",item.name,item.directory?"文件夹":Ui.size(item.size)+" · 点击播放");
-                if(app.store.thumbnailMode() && !item.directory && server!=null){
-                    row.removeViewAt(0);ImageView thumb=new ImageView(MainActivity.this);thumb.setContentDescription(item.name+" 缩略图");thumb.setScaleType(ImageView.ScaleType.CENTER_CROP);thumb.setBackground(Ui.background(Ui.PANEL,8,MainActivity.this));thumb.setImageResource(dev.flowstream.player.R.drawable.ic_launcher);
-                    row.addView(thumb,0,new LinearLayout.LayoutParams(Ui.dp(MainActivity.this,120),Ui.dp(MainActivity.this,76)));
-                    final int token=generation;app.thumbnails.load(server,item,b->{if(!stale(token) && b!=null)thumb.setImageBitmap(b);});
-                }return row;
+                if(grid){
+                    LinearLayout tile=Ui.column(MainActivity.this);Ui.pad(tile,6);
+                    ImageView thumb=new ImageView(MainActivity.this){@Override protected void onMeasure(int w,int h){int width=View.MeasureSpec.getSize(w);super.onMeasure(w,View.MeasureSpec.makeMeasureSpec(width*9/16,View.MeasureSpec.EXACTLY));}};
+                    thumb.setScaleType(ImageView.ScaleType.CENTER_CROP);thumb.setBackground(Ui.background(Ui.panel(MainActivity.this),14,MainActivity.this));thumb.setClipToOutline(true);thumb.setImageResource(item.directory?dev.flowstream.player.R.drawable.ic_folder:dev.flowstream.player.R.drawable.ic_launcher);thumb.setContentDescription(item.directory?"文件夹":item.name+" 缩略图");
+                    tile.addView(thumb,new LinearLayout.LayoutParams(-1,-2));
+                    TextView name=Ui.text(MainActivity.this,item.name,14,Ui.fg(MainActivity.this));name.setMaxLines(2);name.setMinLines(2);name.setEllipsize(android.text.TextUtils.TruncateAt.END);name.setPadding(0,Ui.dp(MainActivity.this,6),0,0);tile.addView(name);
+                    tile.addView(Ui.text(MainActivity.this,item.directory?"文件夹":Ui.size(item.size),11,0xff8d8d94));
+                    if(!item.directory&&server!=null){final int token=generation;app.thumbnails.load(server,item,b->{if(!stale(token)&&b!=null)thumb.setImageBitmap(b);});}return tile;
+                }
+                return browserRow(item,item.directory?"文件夹":Ui.size(item.size),server);
             }
         });
     }
     private void open(int pos){
         if(progress.getVisibility()==View.VISIBLE)return;
-        if(history){if(pos<sessions.size())launch(sessions.get(pos).id);return;}
         if(pos>=entries.size() || server==null)return;
         RemoteItem selected=entries.get(pos);
         if(selected.directory){folder=selected.path;reload();return;}
@@ -131,6 +120,6 @@ public final class MainActivity extends BackActivity {
         });
     }
     private void launch(String id){startActivity(new Intent(this,PlayerActivity.class).putExtra("session_id",id));}
-    @Override protected void back(){if(history){history=false;reload();}else if(!folder.isEmpty()){folder=MediaPaths.parent(folder);reload();}else super.back();}
+    @Override protected void back(){if(!folder.isEmpty()){folder=MediaPaths.parent(folder);reload();}else super.back();}
     @Override protected void onDestroy(){generation++;super.onDestroy();}
 }

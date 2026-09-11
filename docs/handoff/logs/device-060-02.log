@@ -1,0 +1,41 @@
+PASS network directory
+PASS thumbnail mode has two columns
+PASS thumbnail grid lists media
+PASS grid thumbnails decode both test videos, decoded=2
+PASS theme black resolves correctly
+PASS theme black background
+PASS theme white resolves correctly
+PASS theme white background
+PASS theme system resolves correctly
+PASS theme system background
+PASS loading meter counts real network media bytes
+PASS loading meter shows speed unit
+PASS top and bottom exact layout
+PASS info opens
+PASS info toggles closed
+PASS short timeline tap does not seek
+PASS long press starts timeline drag
+PASS drag shows thumbnail preview label
+PASS network directory
+PASS thumbnail mode has two columns
+PASS thumbnail grid lists media
+PASS grid thumbnails decode both test videos, decoded=2
+PASS theme black resolves correctly
+PASS theme black background
+PASS theme white resolves correctly
+PASS theme white background
+PASS theme system resolves correctly
+PASS theme system background
+PASS loading meter counts real network media bytes
+PASS loading meter shows speed unit
+PASS top and bottom exact layout
+PASS info opens
+PASS info toggles closed
+PASS short timeline tap does not seek
+PASS long press starts timeline drag
+PASS drag shows thumbnail preview label
+FAIL java.lang.AssertionError: drag decodes preview image
+	at dev.flowstream.player.DeviceChecks.check(DeviceChecks.java:26)
+	at dev.flowstream.player.DeviceChecks.onStart(DeviceChecks.java:69)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2599)
+

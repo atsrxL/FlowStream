@@ -1,3 +1,11 @@
+# FlowStream 0.6.0 · 精简控制与主题
+
+[APK](dist/FlowStream-0.6.0-debug.apk) · [完整手势](docs/GESTURES.md) · [当前验收](docs/handoff/RESULTS-0.6.0.md)。以下内容为历史版本记录，当前功能以0.6.0为准。
+
+# FlowStream 0.5.0 · 新手势与参考界面
+
+[完整手势](docs/GESTURES.md) · [当前验收](docs/handoff/RESULTS-0.5.0.md)。下方保留历史版本说明。
+
 # FlowStream 0.4.1 · 修复缩放状态下的切片入口
 
 新版结果见[RESULTS-0.4.1](docs/handoff/RESULTS-0.4.1.md)。原始尺寸下画面内拖动、黑边上下切片；使用底部“适屏”可恢复全画面上下切片。

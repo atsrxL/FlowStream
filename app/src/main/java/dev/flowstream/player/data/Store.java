@@ -28,16 +28,14 @@ public final class Store extends SQLiteOpenHelper {
     public int preloadMb() { return Math.max(0,Math.min(50,prefs.getInt("preload_mb",10))); }
     public void setPreloadMb(int mb) { prefs.edit().putInt("preload_mb",Math.max(0,Math.min(50,mb))).apply(); }
     public float sourceSpeed(String id) { return prefs.getFloat("speed."+id,1f); }
+    public int sourcePreset(String id){return Math.max(0,Math.min(2,prefs.getInt("preset."+id,prefs.getBoolean("native."+id,false)?2:0)));}
+    public void saveSourcePreset(String id,int preset){prefs.edit().putInt("preset."+id,preset).putBoolean("native."+id,preset==2).apply();}
     public boolean sourceNative(String id) { return prefs.getBoolean("native."+id,false); }
     public void saveSourcePlayback(String id,float speed,boolean nativeSize) { prefs.edit().putFloat("speed."+id,speed).putBoolean("native."+id,nativeSize).apply(); }
-    public void bookmark(String server,String path,String name,long position) {
-        try { org.json.JSONArray a=new org.json.JSONArray(prefs.getString("bookmarks","[]"));
-            a.put(new org.json.JSONObject().put("server",server).put("path",path).put("name",name).put("position",position));
-            prefs.edit().putString("bookmarks",a.toString()).apply();
-        } catch(org.json.JSONException e) { throw new IllegalStateException(e); }
-    }
-    public org.json.JSONArray bookmarks() { try{return new org.json.JSONArray(prefs.getString("bookmarks","[]"));}catch(Exception e){return new org.json.JSONArray();} }
-    public void removeBookmark(int index) { org.json.JSONArray a=bookmarks();a.remove(index);prefs.edit().putString("bookmarks",a.toString()).apply(); }
+    public String theme(){return prefs.getString("theme","system");}
+    public void setTheme(String value){prefs.edit().putString("theme",value).apply();}
+    @Override public void onOpen(SQLiteDatabase db){super.onOpen(db);db.delete("sessions",null,null);prefs.edit().remove("bookmarks").apply();}
+    private final Map<String,Session> activeSessions=new HashMap<>();
     public String activeServer() { return prefs.getString("active_server", ""); }
     public void selectServer(String id) { prefs.edit().putString("active_server", id).apply(); }
     public String lastFolder(String id) { return prefs.getString("folder." + id, ""); }
@@ -83,55 +81,16 @@ public final class Store extends SQLiteOpenHelper {
         prefs.edit().remove("folder." + id).apply();
         if (activeServer().equals(id)) selectServer("");
     }
-    public String newSession(Server server, String folder, List<RemoteItem> queue, int index) {
-        if (queue.isEmpty() || queue.size() > 10000 || index < 0 || index >= queue.size()) throw new IllegalArgumentException("播放队列无效");
-        String id = UUID.randomUUID().toString(); SQLiteDatabase db = getWritableDatabase();
-        db.beginTransaction();
-        try {
-            ContentValues v = new ContentValues(); v.put("id", id); v.put("server_id", server.id); v.put("server_name", server.name);
-            v.put("folder", folder); v.put("idx", index); v.put("position", 0); v.put("duration", 0); v.put("speed", sourceSpeed(server.id)); v.put("updated", System.currentTimeMillis());
-            db.insertOrThrow("sessions", null, v);
-            for (int i = 0; i < queue.size(); i++) {
-                RemoteItem item = queue.get(i); ContentValues q = new ContentValues();
-                q.put("session_id", id); q.put("idx", i); q.put("path", item.path); q.put("name", item.name); q.put("size", item.size);
-                db.insertOrThrow("queue_items", null, q);
-            }
-            db.execSQL("DELETE FROM sessions WHERE id NOT IN (SELECT id FROM sessions ORDER BY updated DESC LIMIT 100)");
-            db.setTransactionSuccessful(); return id;
-        } finally { db.endTransaction(); }
+    public synchronized String newSession(Server server,String folder,List<RemoteItem> queue,int index){
+        if(queue.isEmpty()||index<0||index>=queue.size())throw new IllegalArgumentException("播放队列无效");
+        Session s=new Session();s.id=UUID.randomUUID().toString();s.serverId=server.id;s.serverName=server.name;s.folder=folder;s.queue=new ArrayList<>(queue);s.index=index;s.speed=sourceSpeed(server.id);
+        activeSessions.clear();activeSessions.put(s.id,s);return s.id;
     }
-    public Session session(String id) throws IOException {
-        Session s;
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT * FROM sessions WHERE id=?", new String[]{id})) {
-            if (!c.moveToFirst()) throw new IOException("会话已清除，请重新打开视频"); s = header(c);
-        }
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT path,name,size FROM queue_items WHERE session_id=? ORDER BY idx", new String[]{id})) {
-            while (c.moveToNext()) s.queue.add(new RemoteItem(c.getString(0), c.getString(1), false, c.getLong(2)));
-        }
-        if (s.queue.isEmpty() || s.index < 0 || s.index >= s.queue.size()) throw new IOException("会话队列损坏");
-        return s;
+    public synchronized Session session(String id)throws IOException{
+        Session s=activeSessions.get(id);if(s==null)throw new IOException("播放队列已失效，请重新打开视频");Session copy=new Session();copy.id=s.id;copy.serverId=s.serverId;copy.serverName=s.serverName;copy.folder=s.folder;copy.queue=new ArrayList<>(s.queue);copy.index=s.index;copy.position=s.position;copy.duration=s.duration;copy.speed=s.speed;return copy;
     }
-    private Session header(Cursor c) {
-        Session s = new Session(); s.id = c.getString(c.getColumnIndexOrThrow("id"));
-        s.serverId = c.getString(c.getColumnIndexOrThrow("server_id")); s.serverName = c.getString(c.getColumnIndexOrThrow("server_name"));
-        s.folder = c.getString(c.getColumnIndexOrThrow("folder")); s.index = c.getInt(c.getColumnIndexOrThrow("idx"));
-        s.position = c.getLong(c.getColumnIndexOrThrow("position")); s.duration = c.getLong(c.getColumnIndexOrThrow("duration"));
-        s.speed = SpeedScale.normalize(c.getFloat(c.getColumnIndexOrThrow("speed"))); s.updated = c.getLong(c.getColumnIndexOrThrow("updated")); return s;
+    public synchronized void checkpoint(String id,int index,long position,long duration,float speed){
+        Session s=activeSessions.get(id);if(s!=null){s.index=index;s.position=Math.max(0,position);s.duration=duration;s.speed=speed;}
     }
-    public List<Session> history() {
-        List<Session> result = new ArrayList<>();
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT s.*,q.path,q.name,q.size FROM sessions s JOIN queue_items q ON q.session_id=s.id AND q.idx=s.idx ORDER BY s.updated DESC LIMIT 100", null)) {
-            while (c.moveToNext()) {
-                Session s = header(c); s.queue.add(new RemoteItem(c.getString(c.getColumnIndexOrThrow("path")), c.getString(c.getColumnIndexOrThrow("name")), false, c.getLong(c.getColumnIndexOrThrow("size")))); result.add(s);
-            }
-        }
-        return result;
-    }
-    public void checkpoint(String id, int index, long position, long duration, float speed) {
-        ContentValues v = new ContentValues(); v.put("idx", index); v.put("position", Math.max(0, position));
-        v.put("duration", Math.max(0, duration)); v.put("speed", SpeedScale.normalize(speed)); v.put("updated", System.currentTimeMillis());
-        getWritableDatabase().update("sessions", v, "id=?", new String[]{id});
-    }
-    public void clearHistory() { getWritableDatabase().delete("sessions", null, null); }
-    public void deleteSession(String id) { getWritableDatabase().delete("sessions", "id=?", new String[]{id}); }
+    public synchronized void deleteSession(String id){activeSessions.remove(id);}
 }

@@ -1,0 +1,11 @@
+PASS network directory
+PASS thumbnail mode has two columns
+PASS thumbnail grid lists media
+PASS network directory
+PASS thumbnail mode has two columns
+PASS thumbnail grid lists media
+FAIL java.lang.AssertionError: grid thumbnails decode both test videos
+	at dev.flowstream.player.DeviceChecks.check(DeviceChecks.java:26)
+	at dev.flowstream.player.DeviceChecks.onStart(DeviceChecks.java:50)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2599)
+

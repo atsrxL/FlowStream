@@ -1,0 +1,87 @@
+PASS network directory
+PASS thumbnail mode has two columns
+PASS thumbnail grid lists media
+PASS loading meter counts real network media bytes
+PASS loading meter shows speed unit
+PASS default width fit
+PASS width fit actual geometry
+PASS single tap does not pause
+PASS single tap hides menu
+PASS single tap shows menu
+PASS double tap pauses
+PASS double tap does not change size
+PASS triple tap does not toggle pause
+PASS triple selects height fit
+PASS height fit actual geometry
+PASS triple selects native
+PASS native uses decoded pixels
+PASS triple cycles back to width
+PASS preset 0 upward swipe switches
+PASS preset 0 downward swipe restores
+PASS preset 1 upward swipe switches
+PASS preset 1 downward swipe restores
+PASS preset 2 upward swipe switches
+PASS preset 2 downward swipe restores
+PASS pinch enters persistent custom
+PASS custom zoom drag never switches
+PASS pinch and pan never unpause
+PASS triple exits custom to width
+PASS right edge gives 5x from 162.0
+PASS left edge gives 0.1x from 162.0
+PASS hold restores menu speed and pause
+PASS left edge gives 4x reverse from 162.0
+PASS right edge gives 5x from 540.0
+PASS left edge gives 0.1x from 540.0
+PASS hold restores menu speed and pause
+PASS left edge gives 4x reverse from 540.0
+PASS right edge gives 5x from 918.0
+PASS left edge gives 0.1x from 918.0
+PASS hold restores menu speed and pause
+PASS left edge gives 4x reverse from 918.0
+PASS rotation
+PASS PiP
+PASS PiP return
+PASS network directory
+PASS thumbnail mode has two columns
+PASS thumbnail grid lists media
+PASS loading meter counts real network media bytes
+PASS loading meter shows speed unit
+PASS default width fit
+PASS width fit actual geometry
+PASS single tap does not pause
+PASS single tap hides menu
+PASS single tap shows menu
+PASS double tap pauses
+PASS double tap does not change size
+PASS triple tap does not toggle pause
+PASS triple selects height fit
+PASS height fit actual geometry
+PASS triple selects native
+PASS native uses decoded pixels
+PASS triple cycles back to width
+PASS preset 0 upward swipe switches
+PASS preset 0 downward swipe restores
+PASS preset 1 upward swipe switches
+PASS preset 1 downward swipe restores
+PASS preset 2 upward swipe switches
+PASS preset 2 downward swipe restores
+PASS pinch enters persistent custom
+PASS custom zoom drag never switches
+PASS pinch and pan never unpause
+PASS triple exits custom to width
+PASS right edge gives 5x from 162.0
+PASS left edge gives 0.1x from 162.0
+PASS hold restores menu speed and pause
+PASS left edge gives 4x reverse from 162.0
+PASS right edge gives 5x from 540.0
+PASS left edge gives 0.1x from 540.0
+PASS hold restores menu speed and pause
+PASS left edge gives 4x reverse from 540.0
+PASS right edge gives 5x from 918.0
+PASS left edge gives 0.1x from 918.0
+PASS hold restores menu speed and pause
+PASS left edge gives 4x reverse from 918.0
+PASS rotation
+PASS PiP
+PASS PiP return
+

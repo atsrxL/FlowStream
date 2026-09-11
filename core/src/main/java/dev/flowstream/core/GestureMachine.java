@@ -55,11 +55,11 @@ public final class GestureMachine {
         maxTravel = Math.max(maxTravel, (float) Math.hypot(dx, dy));
         if (mode == Mode.PAN) { out.pan(x - previousX, y - previousY); return; }
         if (mode == Mode.HOLD_MIDDLE) {
-            float r = SpeedScale.reverse(dx);
+            float r = SpeedScale.reverseAt(x0,x);
             if (r == 0) out.forward(1f); else out.reverse(r);
             return;
         }
-        if (mode == Mode.HOLD_BOTTOM) { out.forward(SpeedScale.bottom(dx)); return; }
+        if (mode == Mode.HOLD_BOTTOM) { out.forward(SpeedScale.bottomAt(x0,x,width)); return; }
         if (mode == Mode.PENDING) {
             if (maxTravel > slop) {
                 if (inspectMode) { mode = Mode.PAN; out.pan(dx, dy); return; }

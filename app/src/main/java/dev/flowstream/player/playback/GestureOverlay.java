@@ -6,7 +6,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.*;
 import dev.flowstream.core.GestureMachine;
-import dev.flowstream.core.TapResolver;
+import dev.flowstream.core.MultiTapResolver;
 
 /** One owner per gesture: transport, inspection, or multi-touch. Controls sit above this view. */
 public final class GestureOverlay extends View {
@@ -14,12 +14,13 @@ public final class GestureOverlay extends View {
         boolean inspectMode();
         default boolean inspectAt(float x,float y){return inspectMode();}
         void doubleTap(float xPx, float yPx);
+        void tripleTap();
         void panPixels(float dxPx, float dyPx);
         void pinch(float factor, float previousX, float previousY, float focusX, float focusY);
         void transformFinished();
     }
     private final GestureMachine machine;
-    private final TapResolver taps;
+    private final MultiTapResolver taps;
     private final ScaleGestureDetector scaleDetector;
     private final Output output;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -37,9 +38,10 @@ public final class GestureOverlay extends View {
         output = out; density = c.getResources().getDisplayMetrics().density;
         ViewConfiguration config = ViewConfiguration.get(c);
         touchSlop = config.getScaledTouchSlop();
-        taps = new TapResolver(ViewConfiguration.getDoubleTapTimeout(), config.getScaledDoubleTapSlop(), new TapResolver.Output() {
-            @Override public void singleTap() { performClick(); }
-            @Override public void doubleTap(float x, float y) { output.doubleTap(x, y); }
+        taps = new MultiTapResolver(ViewConfiguration.getDoubleTapTimeout(), config.getScaledDoubleTapSlop(), new MultiTapResolver.Output() {
+            @Override public void singleTap(){performClick();}
+            @Override public void doubleTap(){output.doubleTap(0,0);}
+            @Override public void tripleTap(){output.tripleTap();}
         });
         machine = new GestureMachine(new GestureMachine.Output() {
             @Override public void tap() { tapEligible = true; } // Only a candidate, never immediate pause.
@@ -67,11 +69,11 @@ public final class GestureOverlay extends View {
                 return true;
             }
         });
-        // Double tap is exclusively native/FIT toggle; never double-tap-and-drag quick zoom.
+        // All tap counting belongs to MultiTapResolver, never quick-scale.
         scaleDetector.setQuickScaleEnabled(false);
         scaleDetector.setStylusScaleEnabled(false);
         setClickable(true); setFocusable(true);
-        setContentDescription("视频手势区域。单击暂停或继续并显示菜单；双击原始尺寸或适屏；双指缩放；缩放后拖动画面；适屏上下滑切片；中下区长按回看或变速。");
+        setContentDescription("视频手势区域。单击显示或隐藏菜单；双击播放或暂停；三击切换宽度适屏、高度适屏、原始大小；双指缩放后拖动画面且不切片；三种预设模式上下滑切片；中下区长按回看或变速。");
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {
