@@ -13,6 +13,7 @@ public final class GestureOverlay extends View {
     public interface Output extends GestureMachine.Output {
         boolean inspectMode();
         default boolean inspectAt(float x,float y){return inspectMode();}
+        void singleTap(float xPx,float yPx);
         void doubleTap(float xPx, float yPx);
         void tripleTap();
         void panPixels(float dxPx, float dyPx);
@@ -40,6 +41,7 @@ public final class GestureOverlay extends View {
         touchSlop = config.getScaledTouchSlop();
         taps = new MultiTapResolver(ViewConfiguration.getDoubleTapTimeout(), config.getScaledDoubleTapSlop(), new MultiTapResolver.Output() {
             @Override public void singleTap(){performClick();}
+            @Override public void singleTapAt(float x,float y){output.singleTap(x,y);}
             @Override public void doubleTap(){output.doubleTap(0,0);}
             @Override public void tripleTap(){output.tripleTap();}
         });
@@ -73,7 +75,7 @@ public final class GestureOverlay extends View {
         scaleDetector.setQuickScaleEnabled(false);
         scaleDetector.setStylusScaleEnabled(false);
         setClickable(true); setFocusable(true);
-        setContentDescription("视频手势区域。单击显示或隐藏菜单；双击播放或暂停；三击切换宽度适屏、高度适屏、原始大小；双指缩放后拖动画面且不切片；三种预设模式上下滑切片；中下区长按回看或变速。");
+        setContentDescription("视频手势区域。图像内单击播放或暂停，黑边单击显示或隐藏菜单；双击恢复宽度适屏；三击切换宽度适屏、高度适屏、原始大小；双指缩放后拖动画面且不切片；三种预设模式上下滑切片；中下区长按回看或变速。");
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {

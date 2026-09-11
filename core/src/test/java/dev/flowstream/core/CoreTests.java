@@ -100,6 +100,11 @@ public final class CoreTests {
             }
         });
         test("hold: edges reach endpoints from every start",()->{for(int start=24;start<=396;start+=3){near(SpeedScale.bottomAt(start,0,420),.1f);near(SpeedScale.bottomAt(start,420,420),5f);near(SpeedScale.bottomAt(start,start,420),2f);near(SpeedScale.reverseAt(start,0),4f);near(SpeedScale.reverseAt(start,start),0f);}});
+        test("multi-tap: delayed and distant singles keep their own coordinates",()->{
+            java.util.List<String> points=new java.util.ArrayList<>();MultiTapResolver r=new MultiTapResolver(300,60,new MultiTapResolver.Output(){public void singleTap(){}public void singleTapAt(float x,float y){points.add(x+","+y);}public void doubleTap(){}public void tripleTap(){}});
+            r.down(100,200,0);r.up(true,100,200,50);r.down(500,800,100);r.up(true,500,800,150);r.confirm(450);
+            if(!points.equals(java.util.Arrays.asList("100.0,200.0","500.0,800.0")))throw new AssertionError(points);
+        });
         test("multi-tap: single double triple exclusive and cancelled",()->{
             int[] calls={0,0,0};MultiTapResolver r=new MultiTapResolver(300,60,new MultiTapResolver.Output(){public void singleTap(){calls[0]++;}public void doubleTap(){calls[1]++;}public void tripleTap(){calls[2]++;}});
             r.down(100,100,0);r.up(true,100,100,20);r.confirm(319);eq(calls[0],0);r.confirm(320);eq(calls[0],1);

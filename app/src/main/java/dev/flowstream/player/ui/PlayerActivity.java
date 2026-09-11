@@ -104,7 +104,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         video=(PlayerView)getLayoutInflater().inflate(R.layout.flow_video,root,false);
         transform=new VideoTransformController(video);
         root.addView(video,new FrameLayout.LayoutParams(-1,-1));
-        gestures=new GestureOverlay(this,this);gestures.setOnClickListener(v->toggleControls());root.addView(gestures,new FrameLayout.LayoutParams(-1,-1));
+        gestures=new GestureOverlay(this,this);gestures.setOnClickListener(v->singleTap(gestures.getWidth()/2f,gestures.getHeight()/2f));root.addView(gestures,new FrameLayout.LayoutParams(-1,-1));
         buffering=new ProgressBar(this);FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48),Gravity.CENTER);root.addView(buffering,bp);
         loadingRate=Ui.text(this,"加载 · 0.0 KB/s",13,Ui.TEXT);loadingRate.setGravity(Gravity.CENTER);loadingRate.setBackground(Ui.background(0xaa000000,10,this));FrameLayout.LayoutParams rp=new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER);rp.topMargin=Ui.dp(this,84);root.addView(loadingRate,rp);
         hud=Ui.text(this,"",17,Ui.TEXT);hud.setGravity(Gravity.CENTER);Ui.pad(hud,16);hud.setBackground(Ui.background(0xb0000000,16,this));hud.setVisibility(View.GONE);
@@ -256,7 +256,8 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     @Override public void tap(){gestures.performClick();}
     @Override public boolean inspectAt(float x,float y){return transform!=null && transform.inspectAt(x,y);}
     @Override public boolean inspectMode(){return transform!=null && transform.inspectMode();}
-    @Override public void doubleTap(float x,float y){if(!inPip())togglePlayback();}
+    @Override public void singleTap(float x,float y){if(inPip())return;if(transform.imageAt(x,y,gestures))togglePlayback();else toggleControls();}
+    @Override public void doubleTap(float x,float y){if(!inPip())fitVideo();}
     @Override public void tripleTap(){if(inPip())return;transform.cyclePreset();if(server!=null)app.store.saveSourcePreset(server.id,transform.presetIndex());counter.setText(transform.label()+" · 上下滑切片");}
     @Override public void panPixels(float dx,float dy){if(transform!=null)transform.pan(dx,dy);}
     @Override public void pinch(float factor,float previousX,float previousY,float x,float y){

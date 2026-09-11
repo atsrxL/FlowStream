@@ -17,6 +17,9 @@ public final class VideoTransformController {
         });
     }
     public boolean inspectMode(){return viewport.mode()==VideoViewport.Mode.CUSTOM;}
+    public boolean imageAt(float x,float y,View coordinateView){
+        if(!viewport.ready())return false;android.graphics.Rect bounds=new android.graphics.Rect();int[] origin=new int[2];coordinateView.getLocationOnScreen(origin);return texture.getGlobalVisibleRect(bounds)&&bounds.contains(Math.round(x)+origin[0],Math.round(y)+origin[1]);
+    }
     public boolean inspectAt(float x,float y){return inspectMode();}
     public void onVideoSize(VideoSize size){viewport.setVideoSize(size.width,size.height,size.pixelWidthHeightRatio);if(!inspectMode())viewport.preset(preset);apply();}
     public void newVideo(){viewport.clearVideo();viewport.preset(preset);apply();}

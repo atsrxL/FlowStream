@@ -40,7 +40,7 @@ public final class DeviceChecks extends Instrumentation {
  try{
  Activity home=startActivitySync(new Intent(getTargetContext(),dev.flowstream.player.ui.MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));main(()->home.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));Thread.sleep(800);
  FlowApp app=(FlowApp)getTargetContext().getApplicationContext();oldTheme=app.store.theme();previousServer=app.store.activeServer();oldThumbnails=app.store.thumbnailMode();oldRandom=app.store.randomMode();app.store.setRandomMode(false);
- Server server=new Server();server.name="FlowStream 0.6 fixture";server.protocol="WEBDAV";server.url="http://127.0.0.1:8089/dav/";server.allowHttp=true;server.username="demo";server.password="demo-only";serverId=server.id;app.store.saveServer(server);
+ Server server=new Server();server.name="FlowStream 0.6.2 fixture";server.protocol="WEBDAV";server.url="http://127.0.0.1:8089/dav/";server.allowHttp=true;server.username="demo";server.password="demo-only";serverId=server.id;app.store.saveServer(server);
  List<RemoteItem> entries=Browsers.list(server,"");check(entries.size()>=2,"network directory");app.store.selectServer(serverId);app.store.setThumbnailMode(true);
  main(()->{try{java.lang.reflect.Method m=home.getClass().getDeclaredMethod("reload");m.setAccessible(true);m.invoke(home);}catch(Exception e){throw new RuntimeException(e);}});Thread.sleep(4000);android.widget.GridView grid=(android.widget.GridView)field(home,"list");
  check(grid.getNumColumns()==2,"thumbnail mode has two columns");check(grid.getAdapter().getCount()>=2,"thumbnail grid lists media");
@@ -48,13 +48,13 @@ public final class DeviceChecks extends Instrumentation {
  java.util.concurrent.CountDownLatch covers=new java.util.concurrent.CountDownLatch(2);java.util.concurrent.atomic.AtomicInteger decoded=new java.util.concurrent.atomic.AtomicInteger();
  for(int i=0;i<2;i++)app.thumbnails.load(server,entries.get(i),b->{if(b!=null)decoded.incrementAndGet();covers.countDown();});
  check(covers.await(55,java.util.concurrent.TimeUnit.SECONDS)&&decoded.get()==2,"grid thumbnails decode both test videos, decoded="+decoded.get());
- main(()->{try{java.util.List<RemoteItem> items=new java.util.ArrayList<>((java.util.List<RemoteItem>)field(home,"entries"));items.add(new RemoteItem("sample-folder","文件夹示例",true,0));Field ef=home.getClass().getDeclaredField("entries");ef.setAccessible(true);ef.set(home,items);java.lang.reflect.Method refresh=home.getClass().getDeclaredMethod("showRows");refresh.setAccessible(true);refresh.invoke(home);}catch(Exception ex){throw new RuntimeException(ex);}});screenshot("grid-060");
+ main(()->{try{java.util.List<RemoteItem> items=new java.util.ArrayList<>((java.util.List<RemoteItem>)field(home,"entries"));items.add(new RemoteItem("sample-folder","文件夹示例",true,0));Field ef=home.getClass().getDeclaredField("entries");ef.setAccessible(true);ef.set(home,items);java.lang.reflect.Method refresh=home.getClass().getDeclaredMethod("showRows");refresh.setAccessible(true);refresh.invoke(home);}catch(Exception ex){throw new RuntimeException(ex);}});screenshot("grid-062");
  check(grid.getAdapter().getCount()==3,"folder icon displayed alongside video thumbnails");
  for(String theme:new String[]{"black","white","system"}){
   app.store.setTheme(theme);Activity settings=startActivitySync(new Intent(getTargetContext(),dev.flowstream.player.ui.SettingsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
   boolean expected=theme.equals("black")||(theme.equals("system")&&(settings.getResources().getConfiguration().uiMode&48)==32);
   check(dev.flowstream.player.ui.Ui.dark(settings)==expected,"theme "+theme+" resolves correctly");
-  final int[] color={0};main(()->{View root=((android.view.ViewGroup)settings.findViewById(android.R.id.content)).getChildAt(0);color[0]=((android.graphics.drawable.ColorDrawable)root.getBackground()).getColor();});check(color[0]==(expected?android.graphics.Color.BLACK:android.graphics.Color.WHITE),"theme "+theme+" background");screenshot("theme-060-"+theme);main(settings::finish);
+  final int[] color={0};main(()->{View root=((android.view.ViewGroup)settings.findViewById(android.R.id.content)).getChildAt(0);color[0]=((android.graphics.drawable.ColorDrawable)root.getBackground()).getColor();});check(color[0]==(expected?android.graphics.Color.BLACK:android.graphics.Color.WHITE),"theme "+theme+" background");screenshot("theme-062-"+theme);main(settings::finish);
  }
  app.store.setTheme(oldTheme);
 
@@ -67,7 +67,7 @@ public final class DeviceChecks extends Instrumentation {
  long beforeSeek=position();tap(sx,sy);Thread.sleep(100);check(Math.abs(position()-beforeSeek)<150,"short timeline tap does not seek");
  long sd=SystemClock.uptimeMillis();touch(0,sx,sy,sd);Thread.sleep(android.view.ViewConfiguration.getLongPressTimeout()+100);touch(2,sx+20,sy,sd);check((boolean)field(activity,"scrubbing"),"long press starts timeline drag");check(((View)field(activity,"previewTime")).getVisibility()==View.VISIBLE,"drag shows thumbnail preview label");
  for(int i=0;i<100&&((View)field(activity,"preview")).getVisibility()!=View.VISIBLE;i++)Thread.sleep(100);
- check(((View)field(activity,"preview")).getVisibility()==View.VISIBLE,"drag decodes preview image");screenshot("preview-060");touch(1,sx+20,sy,sd);ready();check(position()>beforeSeek+1000&&!playing(),"timeline release seeks and preserves pause");
+ check(((View)field(activity,"preview")).getVisibility()==View.VISIBLE,"drag decodes preview image");screenshot("preview-062");touch(1,sx+20,sy,sd);ready();check(position()>beforeSeek+1000&&!playing(),"timeline release seeks and preserves pause");
  long cancelPosition=position();sd=SystemClock.uptimeMillis();touch(0,sx,sy,sd);Thread.sleep(android.view.ViewConfiguration.getLongPressTimeout()+80);touch(2,sx-150,sy,sd);Thread.sleep(350);check(((android.widget.TextView)field(activity,"time")).getText().toString().startsWith(dev.flowstream.player.ui.Ui.time((long)(24000*seek.getProgress()/10000.0))),"drag time stays at target");touch(3,sx-150,sy,sd);check(Math.abs(position()-cancelPosition)<150&&!playing(),"cancel drag preserves position and pause");
 
  main(()->e.seekTo(10000));ready();invoke("showControls");main(()->{android.view.ViewGroup bottom=(android.view.ViewGroup)getUnchecked(activity,"bottom");android.view.ViewGroup row=(android.view.ViewGroup)bottom.getChildAt(2);row.getChildAt(2).performClick();});ready();check(Math.abs(position()-8000)<250,"minus two seconds");
@@ -76,17 +76,18 @@ public final class DeviceChecks extends Instrumentation {
  main(()->{e.seekTo(0);e.play();});ready();
  int[] wh=new int[2];main(()->{wh[0]=activity.getWindow().getDecorView().getWidth();wh[1]=activity.getWindow().getDecorView().getHeight();});float x=wh[0]/2f,y=wh[1]/2f;
  check(viewport().mode()==VideoViewport.Mode.WIDTH,"default width fit");check(Math.abs(viewport().width()-wh[0])<1,"width fit actual geometry");
- invoke("showControls");tap(x,y);Thread.sleep(400);check(playing(),"single tap does not pause");check(((View)field(activity,"top")).getVisibility()==View.GONE,"single tap hides menu");
- tap(x,y);Thread.sleep(400);check(((View)field(activity,"top")).getVisibility()==View.VISIBLE,"single tap shows menu");dbl(x,y);check(!playing(),"double tap pauses");check(viewport().mode()==VideoViewport.Mode.WIDTH,"double tap does not change size");
+ invoke("showControls");tap(x,y*.45f);Thread.sleep(400);check(playing(),"black area single does not pause");check(((View)field(activity,"top")).getVisibility()==View.GONE,"black single hides menu");
+ tap(x,y*.45f);Thread.sleep(400);check(((View)field(activity,"top")).getVisibility()==View.VISIBLE,"black single shows menu");tap(x,y);Thread.sleep(400);check(!playing(),"image single pauses");tap(x,y);Thread.sleep(400);check(playing(),"image single plays");
+ dbl(x,y);check(playing(),"double fit does not pause playing video");check(viewport().mode()==VideoViewport.Mode.WIDTH,"double restores width fit");tap(x,y);Thread.sleep(400);check(!playing(),"image pause before triple cycle");
  triple(x,y);check(!playing(),"triple tap does not toggle pause");check(viewport().mode()==VideoViewport.Mode.HEIGHT,"triple selects height fit");check(Math.abs(viewport().height()-wh[1])<1,"height fit actual geometry");
- triple(x,y);check(viewport().mode()==VideoViewport.Mode.NATIVE,"triple selects native");check(Math.abs(viewport().width()-640)<1,"native uses decoded pixels");screenshot("native-060");triple(x,y);check(viewport().mode()==VideoViewport.Mode.WIDTH,"triple cycles back to width");
+ triple(x,y);check(viewport().mode()==VideoViewport.Mode.NATIVE,"triple selects native");check(Math.abs(viewport().width()-640)<1,"native uses decoded pixels");screenshot("native-062");tap(wh[0]*.12f,y);Thread.sleep(400);check(!playing(),"native side black bar never toggles playback");tap(x,y);Thread.sleep(400);check(playing(),"native visible image toggles playback");tap(x,y);Thread.sleep(400);dbl(x,y);check(!playing()&&viewport().mode()==VideoViewport.Mode.WIDTH,"native double resets fit and preserves pause");
  for(int preset=0;preset<3;preset++){
   final int mode=preset;main(()->{try{Object t=field(activity,"transform");t.getClass().getMethod("setPreset",int.class).invoke(t,mode);app.store.saveSourcePreset(serverId,mode);}catch(Exception ex){throw new RuntimeException(ex);}});
   int before=index();drag(x,y+150,x,y-450,240);ready();check(index()!=before,"preset "+preset+" upward swipe switches");drag(x,y-150,x,y+450,240);ready();check(index()==before,"preset "+preset+" downward swipe restores");
  }
  invoke("fitVideo");main(()->e.pause());
  long d=SystemClock.uptimeMillis();touch(0,x-70,y,d);multi(5|(1<<8),d,x-70,x+70,y);for(int i=0;i<14;i++){Thread.sleep(20);multi(2,d,x-70-i*16,x+70+i*16,y);}multi(6|(1<<8),d,x-278,x+278,y);touch(2,x-228,y-100,d);touch(1,x-228,y-100,d);Thread.sleep(350);
- check(viewport().mode()==VideoViewport.Mode.CUSTOM,"pinch enters persistent custom");drag(x,y,x,y-650,240);check(index()==0,"custom zoom drag never switches");check(!playing(),"pinch and pan never unpause");triple(x,y);check(viewport().mode()==VideoViewport.Mode.WIDTH,"triple exits custom to width");
+ check(viewport().mode()==VideoViewport.Mode.CUSTOM,"pinch enters persistent custom");drag(x,y,x,y-650,240);check(index()==0,"custom zoom drag never switches");check(!playing(),"pinch and pan never unpause");tap(x,y);Thread.sleep(400);check(playing(),"zoomed image single plays");tap(x,y);Thread.sleep(400);dbl(x,y);check(!playing()&&viewport().mode()==VideoViewport.Mode.WIDTH,"double exits custom zoom without toggling playback");
  Object trick=field(activity,"trick");main(()->{try{trick.getClass().getMethod("setBaseSpeed",float.class).invoke(trick,1.35f);}catch(Exception ex){throw new RuntimeException(ex);}});
  for(float start:new float[]{wh[0]*.15f,wh[0]*.5f,wh[0]*.85f}){
   main(()->e.pause());invoke("toggleControls"); // Explicitly hide controls before holds.
@@ -94,7 +95,7 @@ public final class DeviceChecks extends Instrumentation {
   d=SystemClock.uptimeMillis();touch(0,start,wh[1]*.75f,d);Thread.sleep(450);touch(2,wh[0],wh[1]*.75f,d);float[] speed={0};main(()->speed[0]=e.getPlaybackParameters().speed);check(Math.abs(speed[0]-5)<.001,"right edge gives 5x from "+start);touch(2,0,wh[1]*.75f,d);main(()->speed[0]=e.getPlaybackParameters().speed);check(Math.abs(speed[0]-.1f)<.001,"left edge gives 0.1x from "+start);touch(1,0,wh[1]*.75f,d);main(()->speed[0]=e.getPlaybackParameters().speed);check(Math.abs(speed[0]-1.35f)<.001&&!playing(),"hold restores menu speed and pause");
   main(()->e.seekTo(10000));ready();d=SystemClock.uptimeMillis();touch(0,start,y,d);Thread.sleep(450);touch(2,0,y,d);Thread.sleep(150);Object clock=field(trick,"clock");check(Math.abs((float)field(clock,"magnitude")-4)<.001,"left edge gives 4x reverse from "+start);touch(3,0,y,d);
  }
- invoke("showControls");screenshot("controls-060");
+ invoke("showControls");screenshot("controls-062");
  int orientation=activity.getResources().getConfiguration().orientation;invoke("rotate");Thread.sleep(1000);check(activity.getResources().getConfiguration().orientation!=orientation,"rotation");invoke("enterPip");Thread.sleep(1000);check(activity.isInPictureInPictureMode(),"PiP");main(()->activity.startActivity(new Intent(activity,PlayerActivity.class).putExtra("session_id",sessionId)));Thread.sleep(1000);ready();check(!activity.isInPictureInPictureMode(),"PiP return");
  }catch(Throwable t){result=Activity.RESULT_CANCELED;report.append("FAIL ").append(android.util.Log.getStackTraceString(t));}
  finally{try{if(activity!=null)main(()->activity.finish());FlowApp app=(FlowApp)getTargetContext().getApplicationContext();if(sessionId!=null)app.store.deleteSession(sessionId);if(serverId!=null)app.store.deleteServer(serverId);if(previousServer!=null){app.store.selectServer(previousServer);app.store.setThumbnailMode(oldThumbnails);app.store.setRandomMode(oldRandom);if(oldTheme!=null)app.store.setTheme(oldTheme);}}catch(Throwable ignored){}}

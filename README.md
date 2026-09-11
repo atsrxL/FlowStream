@@ -1,3 +1,7 @@
+# FlowStream 0.6.2 · 图像与黑边点击分区
+
+[APK](dist/FlowStream-0.6.2-debug.apk) · [当前验收](docs/handoff/RESULTS-0.6.2.md) · [完整交互](docs/GESTURES.md)。
+
 # FlowStream 0.6.1 · 视频删除菜单
 
 [APK](dist/FlowStream-0.6.1-debug.apk) · [当前验收](docs/handoff/RESULTS-0.6.1.md) · [完整交互](docs/GESTURES.md)。
