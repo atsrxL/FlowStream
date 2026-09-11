@@ -1,0 +1,23 @@
+PASS isolated fixture has exactly two disposable videos
+PASS right menu and separated bottom buttons
+PASS cancel keeps real files
+PASS denied request leaves files intact
+PASS failure keeps playback queue
+PASS delete removes actual remote file
+PASS queue advances to remaining file
+PASS stored in-memory queue also removes file
+PASS rotation retains updated queue
+PASS last video physically deleted
+PASS last delete closes player
+PASS isolated fixture has exactly two disposable videos
+PASS right menu and separated bottom buttons
+PASS cancel keeps real files
+PASS denied request leaves files intact
+PASS failure keeps playback queue
+PASS delete removes actual remote file
+PASS queue advances to remaining file
+PASS stored in-memory queue also removes file
+PASS rotation retains updated queue
+PASS last video physically deleted
+PASS last delete closes player
+

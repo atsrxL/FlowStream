@@ -7,9 +7,9 @@ android {
         applicationId 'dev.flowstream.player'
         minSdk 26
         targetSdk 36
-        versionCode 7
-        versionName '0.6.0'
-        testInstrumentationRunner 'dev.flowstream.player.DeviceChecks'
+        versionCode 8
+        versionName '0.6.1'
+        testInstrumentationRunner project.hasProperty('deleteChecks') ? 'dev.flowstream.player.DeletionChecks' : 'dev.flowstream.player.DeviceChecks'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

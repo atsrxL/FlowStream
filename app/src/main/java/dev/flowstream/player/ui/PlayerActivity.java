@@ -52,6 +52,8 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     private Session session;
     private Server server;
     private String sessionId;
+    private boolean deleting;
+    private AlertDialog deleteConfirm;
     private boolean visible,loading,resumePlaying=true,scrubbing,scrubResume,pipTransition;
     private int generation;
     private final NextVideoCache nextCache=new NextVideoCache();
@@ -118,7 +120,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         bottom=Ui.column(this);bottom.setBackgroundColor(Color.TRANSPARENT);Ui.pad(bottom,8);
         LinearLayout infoRow=Ui.row(this);
         infoRow.addView(new IconButton(this,"info","媒体信息",this::playbackInfo),new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));
-        infoRow.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));bottom.addView(infoRow);
+        infoRow.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));infoRow.addView(new IconButton(this,"more","菜单",this::fileMenu),new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));bottom.addView(infoRow);
         LinearLayout timeline=Ui.row(this);
         time=Ui.text(this,"00:00 / --:--",11,Ui.TEXT);time.setGravity(Gravity.CENTER);timeline.addView(time,new LinearLayout.LayoutParams(Ui.dp(this,96),Ui.dp(this,48)));
         seek=new HoldSeekBar(this);seek.setMax(10000);seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setContentDescription("长按后拖动播放进度并预览缩略图");timeline.addView(seek,new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));bottom.addView(timeline);
@@ -129,8 +131,10 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         circle(buttons,"+2s",()->seekBy(2000,false));circle(buttons,"+10s",()->seekBy(10000,false));abButton=circle(buttons,"A/B",this::cycleAb);
         bottom.addView(buttons,new LinearLayout.LayoutParams(-1,-2));
         buttons.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
-            int size=Math.min(Ui.dp(this,48),Math.max(1,(r-l)/7));
-            for(int i=0;i<buttons.getChildCount();i++){View child=buttons.getChildAt(i);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)child.getLayoutParams();if(lp.width!=size||lp.height!=size){lp.width=lp.height=size;child.setLayoutParams(lp);}}
+            int width=r-l,gap=Ui.dp(this,8),size=Math.min(Ui.dp(this,44),Math.max(1,(width-gap*6)/7));
+            int spacing=Math.max(gap,(width-size*7)/6);
+            for(int i=0;i<buttons.getChildCount();i++){View child=buttons.getChildAt(i);LinearLayout.LayoutParams lp=(LinearLayout.LayoutParams)child.getLayoutParams();int margin=i==6?0:spacing;if(lp.width!=size||lp.height!=size||lp.rightMargin!=margin){lp.width=lp.height=size;lp.rightMargin=margin;child.setLayoutParams(lp);}}
+
         });
         mediaInfo=Ui.text(this,"",13,Ui.TEXT);Ui.pad(mediaInfo,16);mediaInfo.setBackground(Ui.background(0xee1d1d1f,16,this));mediaInfo.setVisibility(View.GONE);
         FrameLayout.LayoutParams ip=new FrameLayout.LayoutParams(-1,-2,Gravity.TOP);ip.topMargin=Ui.dp(this,96);ip.leftMargin=ip.rightMargin=Ui.dp(this,16);root.addView(mediaInfo,ip);mediaInfo.setOnClickListener(v->mediaInfo.setVisibility(View.GONE));
@@ -164,6 +168,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         video.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->updatePipParams());showControls();
     }
     private void loadSession(){
+        if(deleting)return;
         if(loading || sessionId==null){if(sessionId==null)showError("缺少会话记录，请返回文件列表打开视频。");return;}
         final int token=++generation;final String requested=sessionId;loading=true;buffering.setVisibility(View.VISIBLE);
         app.disk.execute(()->{
@@ -173,7 +178,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         });
     }
     private void createPlayer(){
-        if(player!=null || session==null)return;
+        if(deleting || player!=null || session==null)return;
         try{
             source=new SourceBundle(server);
             DefaultLoadControl load=new DefaultLoadControl.Builder().setBufferDurationsMs(10000,30000,1200,2200).setBackBuffer(30000,true).setTargetBufferBytes(64*1024*1024).build();
@@ -323,6 +328,31 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(frame){androidx.media3.common.Format f=player.getVideoFormat();if(f==null || f.frameRate<=0){Ui.toast(this,"帧率未知，无法按帧定位");return;}step=Math.round(1000d/f.frameRate)*(delta<0?-1:1);player.pause();}
         player.setSeekParameters(SeekParameters.EXACT);long target=Math.max(0,player.getCurrentPosition()+step);long duration=player.getDuration();if(duration>0)target=Math.min(duration-1,target);player.seekTo(target);checkpoint();showControls();
     }
+    private void fileMenu(){
+        if(deleting||session==null)return;gestures.cancelGesture();handler.removeCallbacks(hideControls);
+        AlertDialog menu=new AlertDialog.Builder(this).setTitle("菜单").setItems(new String[]{"删除"},(d,w)->confirmDelete()).setNegativeButton("关闭",null).create();menu.setOnDismissListener(d->showControls());menu.show();
+    }
+    private void confirmDelete(){
+        if(deleting||session==null)return;
+        final RemoteItem selected=session.current();
+        deleteConfirm=new AlertDialog.Builder(this).setTitle("删除当前视频？").setMessage(selected.name+"\n将从服务器磁盘删除原文件，不能在本应用内撤销。")
+                .setNegativeButton("取消",null).setPositiveButton("删除",(d,w)->{if(session!=null&&session.current().path.equals(selected.path))deleteCurrent();}).create();
+        deleteConfirm.setOnDismissListener(d->showControls());deleteConfirm.show();
+    }
+    private void deleteCurrent(){
+        if(deleting||player==null||session==null)return;
+        cancelScrub();gestures.cancelGesture();checkpoint();resumePlaying=player.getPlayWhenReady();
+        final String id=session.id;final RemoteItem item=session.current();final Server endpoint=server;
+        deleting=true;nextCache.preload(this,server,"",0);clearPreviews();releasePlayer();mediaInfo.setVisibility(View.GONE);persistentHint("正在删除…");
+        app.io.execute(()->{
+            try{dev.flowstream.player.net.Browsers.deleteVideo(endpoint,item);
+                app.disk.execute(()->{try{Session remaining=app.store.removeMedia(id,item.path);app.main.post(()->{
+                    deleting=false;if(isDestroyed())return;if(!id.equals(sessionId)){loadSession();return;}session=remaining;hud.setVisibility(View.GONE);Ui.toast(this,"已从服务器删除 "+item.name);
+                    if(remaining==null){finish();return;}if(visible)createPlayer();
+                });}catch(Exception e){app.main.post(()->{deleting=false;if(!isDestroyed()){hud.setVisibility(View.GONE);finish();}});}});
+            }catch(Exception e){app.main.post(()->{deleting=false;if(isDestroyed())return;if(!id.equals(sessionId)){loadSession();return;}hud.setVisibility(View.GONE);if(visible)createPlayer();Ui.toast(this,Ui.error(e));});}
+        });
+    }
     private void playbackInfo(){
         if(mediaInfo.getVisibility()==View.VISIBLE){mediaInfo.setVisibility(View.GONE);showControls();return;}
         if(player==null)return;handler.removeCallbacks(hideControls);androidx.media3.common.Format f=player.getVideoFormat();long elapsed=Math.max(1,SystemClock.elapsedRealtime()-networkStartTime);long bytes=android.net.TrafficStats.getUidRxBytes(android.os.Process.myUid())-networkStartBytes;
@@ -416,6 +446,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     // A toolbar/seekbar DOWN cancels a still-pending single tap from the image below it.
     // Thus tapping pause/rotate/speed quickly after an image tap cannot toggle twice later.
     @Override public boolean dispatchTouchEvent(MotionEvent event){
+        if(deleting)return true;
         if(gestureLocked && !hit(lockButton,event))return true;
         if(event.getActionMasked()==MotionEvent.ACTION_DOWN && gestures!=null
                 && (hit(top,event)||hit(bottom,event)||hit(errorBox,event)||hit(mediaInfo,event)))gestures.cancelGesture();

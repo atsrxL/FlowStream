@@ -20,6 +20,22 @@ public final class Browsers {
         found.sort((a,b) -> a.directory != b.directory ? (a.directory ? -1 : 1) : collator.compare(a.name, b.name));
         return found;
     }
+    /** Deletes only an explicitly selected video file, never a directory or a redirected target. */
+    public static void deleteVideo(Server server,RemoteItem item)throws IOException{
+        String path=MediaPaths.normalize(item.path);
+        if(item.directory||path.isEmpty()||!MediaPaths.video(path))throw new IOException("只能删除视频文件");
+        if(server.protocol.equals("SMB")){
+            try(SmbConnection connection=new SmbConnection(server)){connection.share.rm(server.smbPath(path));}
+            catch(Exception e){throw new IOException("SMB 删除失败，请检查删除权限和文件占用",e);}return;
+        }
+        boolean file=false;for(RemoteItem listed:list(server,MediaPaths.parent(path)))if(listed.path.equals(path)&&!listed.directory){file=true;break;}
+        if(!file)throw new IOException("文件不存在或已变为目录，请刷新后重试");
+        DavUrls urls=new DavUrls(server.url,server.allowHttp);
+        OkHttpClient client=HttpNetwork.client(server).newBuilder().followRedirects(false).retryOnConnectionFailure(false).build();
+        try(Response response=client.newCall(new Request.Builder().url(urls.uri(path,false).toString()).delete().build()).execute()){
+            if(response.code()!=200&&response.code()!=204)throw new IOException("删除未确认完成：HTTP "+response.code()+"，请检查权限或刷新目录确认");
+        }finally{HttpNetwork.close(client);}
+    }
     private static List<RemoteItem> smb(Server s, String folder) throws IOException {
         try (SmbConnection c = new SmbConnection(s)) {
             List<RemoteItem> found = new ArrayList<>();

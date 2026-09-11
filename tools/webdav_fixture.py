@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 
 ET.register_namespace('d', 'DAV:')
 
-def dav_handler(root: Path, username: str, password: str):
+def dav_handler(root: Path, username: str, password: str, allow_delete: bool = False):
     root = root.resolve(strict=True)
     token = 'Basic ' + base64.b64encode(f'{username}:{password}'.encode()).decode()
 
@@ -98,6 +98,22 @@ def dav_handler(root: Path, username: str, password: str):
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+        def do_DELETE(self):
+            if not self.authorize():
+                return
+            path = self.resolve()
+            if path is None:
+                return
+            if not allow_delete or path.name.startswith('protected-'):
+                self.send_error(403)
+                return
+            if not path.is_file() or path.is_symlink():
+                self.send_error(404)
+                return
+            path.unlink()
+            self.send_response(204)
+            self.send_header('Content-Length', '0')
+            self.end_headers()
         def do_HEAD(self):
             self.serve_file(head=True)
         def do_GET(self):
@@ -155,10 +171,11 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--bind', default='127.0.0.1')
     parser.add_argument('--port', type=int, default=8089)
+    parser.add_argument('--allow-delete', action='store_true', help='Allow deletion of fixture files only')
     args = parser.parse_args()
     if not args.root.is_dir():
         parser.error('--root must be an existing directory')
-    server = ThreadingHTTPServer((args.bind, args.port), dav_handler(args.root, os.getenv('FLOW_USER', 'demo'), os.getenv('FLOW_PASSWORD', 'demo-only')))
+    server = ThreadingHTTPServer((args.bind, args.port), dav_handler(args.root, os.getenv('FLOW_USER', 'demo'), os.getenv('FLOW_PASSWORD', 'demo-only'), args.allow_delete))
     print(f'Local test fixture listening on {args.bind}:{args.port}; WebDAV path /dav/.')
     print('HTTP only; trusted development network only. Press Ctrl+C to stop.')
     try:

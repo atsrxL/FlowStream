@@ -92,5 +92,13 @@ public final class Store extends SQLiteOpenHelper {
     public synchronized void checkpoint(String id,int index,long position,long duration,float speed){
         Session s=activeSessions.get(id);if(s!=null){s.index=index;s.position=Math.max(0,position);s.duration=duration;s.speed=speed;}
     }
+    public synchronized Session removeMedia(String id,String path)throws IOException{
+        Session s=activeSessions.get(id);if(s==null)return null;
+        String current=s.current().path;int before=s.index;s.queue.removeIf(item->item.path.equals(path));
+        if(s.queue.isEmpty()){activeSessions.remove(id);return null;}
+        if(current.equals(path)){s.index=Math.min(before,s.queue.size()-1);s.position=s.duration=0;}
+        else{for(int i=0;i<s.queue.size();i++)if(s.queue.get(i).path.equals(current)){s.index=i;break;}}
+        return session(id);
+    }
     public synchronized void deleteSession(String id){activeSessions.remove(id);}
 }

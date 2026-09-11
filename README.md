@@ -1,3 +1,7 @@
+# FlowStream 0.6.1 · 视频删除菜单
+
+[APK](dist/FlowStream-0.6.1-debug.apk) · [当前验收](docs/handoff/RESULTS-0.6.1.md) · [完整交互](docs/GESTURES.md)。
+
 # FlowStream 0.6.0 · 精简控制与主题
 
 [APK](dist/FlowStream-0.6.0-debug.apk) · [完整手势](docs/GESTURES.md) · [当前验收](docs/handoff/RESULTS-0.6.0.md)。以下内容为历史版本记录，当前功能以0.6.0为准。

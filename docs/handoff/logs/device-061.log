@@ -1,0 +1,15 @@
+PASS isolated fixture has exactly two disposable videos
+PASS right menu and separated bottom buttons
+PASS cancel keeps real files
+PASS denied request leaves files intact
+PASS failure keeps playback queue
+PASS isolated fixture has exactly two disposable videos
+PASS right menu and separated bottom buttons
+PASS cancel keeps real files
+PASS denied request leaves files intact
+PASS failure keeps playback queue
+FAIL java.lang.AssertionError: not ready
+	at dev.flowstream.player.DeletionChecks.ready(DeletionChecks.java:20)
+	at dev.flowstream.player.DeletionChecks.onStart(DeletionChecks.java:34)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2599)
+
