@@ -1,0 +1,194 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :core:compileJava UP-TO-DATE
+> Task :core:processResources NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:compileTestJava UP-TO-DATE
+> Task :core:processTestResources NO-SOURCE
+> Task :core:testClasses UP-TO-DATE
+
+> Task :core:selfTest
+PASS speed: all 46 exact menu values, ordered
+PASS speed: 2.00 transitions directly to 2.50
+PASS speed: saved speed roundtrips
+PASS speed: invalid indices rejected
+PASS bottom hold: clamps 1x..5x with origin 2x
+PASS bottom hold: tiny horizontal tremor keeps exactly 2x
+PASS middle hold: 24dp dead zone and 0.1x..2x range
+PASS tap: short stationary contact only
+PASS tap: jitter within dead zone
+PASS swipe: small vertical motion does not switch or tap
+PASS swipe: upward threshold switches next once
+PASS swipe: downward threshold switches previous
+PASS swipe: short fast fling accepted above minimum distance
+PASS swipe: 40dp fast flick rejected
+PASS swipe: opposite fling velocity not accepted
+PASS swipe: long diagonal rejected
+PASS swipe: axis cannot be stolen after horizontal rejection
+PASS swipe: return to origin cancels distance commit
+PASS swipe: 450ms cooldown between commits
+PASS hold: top third has no hold action
+PASS hold: middle starts normal playback
+PASS hold: bottom starts 2x then left/right adjust
+PASS hold: middle left reverse and return to 1x
+PASS hold: vertical drift after activation never changes video
+PASS hold: cannot activate after vertical axis is locked
+PASS hold: subthreshold diagonal movement still cancels long press eligibility
+PASS cancel: hold restored once, no tap on later up
+PASS cancel: pending long press cannot fire after cancel
+PASS edges: Android back and home strips reserved
+PASS zones: starting zone remains latched across boundaries
+PASS clock: reverse 0.1x advances by 100ms in 1s
+PASS clock: independent of keyframe-rounded player position
+PASS clock: clamps at file start
+PASS clock: suspended UI does not cause huge jump
+PASS paths: preserve Unicode, plus, percent, spaces
+PASS paths: traversal and control characters rejected
+PASS paths: only video and playlist candidates
+PASS queue: boundaries do not wrap
+PASS history: complete video resumes from beginning
+PASS DAV: URL encoding exactly once and + preserved
+PASS DAV: HTTP opt-in required
+PASS DAV: embedded credentials, queries and fragments rejected
+PASS DAV: root traversal rejected
+PASS DAV: same-origin credential isolation
+PASS DAV: root prefix boundary enforced
+PASS DAV: encoded separators rejected
+PASS DAV: relative href directory resolution
+PASS DAV: successful propstat, directory, 64-bit size
+PASS DAV: 404 props, self, recursive and foreign href ignored
+PASS DAV: duplicate paths deduplicated
+PASS DAV: XML DTD and external entities rejected
+PASS DAV: unexpected HTML and malformed XML rejected
+PASS DAV: non-DAV namespace rejected
+PASS DAV: bounded response protects parser
+PASS fuzz: 20,000 gesture streams preserve exclusivity and release balance
+PASS tap resolver: a single tap waits for double-tap timeout
+PASS tap resolver: valid double tap never pauses once or twice
+PASS tap resolver: second DOWN does not commit zoom
+PASS tap resolver: cancellation removes deferred pause
+PASS tap resolver: second contact drag never zooms or pauses
+PASS tap resolver: second contact hold never zooms or pauses
+PASS tap resolver: pending confirmation freezes during second contact
+PASS tap resolver: separated taps are two singles
+PASS tap resolver: distant taps are not double tap
+PASS tap resolver: triple tap is a double then one single
+PASS tap resolver: exact time and distance boundary accepted
+PASS tap resolver: spurious UP after CANCEL has no effect
+PASS tap resolver: a callback can cancel reentrantly
+PASS viewport: 4K FIT does not crop
+PASS viewport: 4K double tap is exactly native, not fixed 2x
+PASS viewport: double tap again restores FIT and recenters
+PASS viewport: native low-res video shrinks rather than fake enlarging
+PASS viewport: non-square pixels keep display aspect and native line height
+PASS viewport: already-rotated portrait dimensions are not rotated twice
+PASS viewport: double tap keeps focal video sample under tap
+PASS viewport: native square pixels align to integer origins
+PASS viewport: native pan clamps both ends without blank overscroll
+PASS viewport: axis smaller than screen stays centered
+PASS viewport: FIT drag is ignored
+PASS viewport: pinch anchors and translates around moving centroid
+PASS viewport: extreme pinch is bounded
+PASS viewport: zoom ceiling never prevents native size
+PASS viewport: custom zoom double tap returns to FIT
+PASS viewport: near-FIT snap occurs only after gesture ends
+PASS viewport: rotation clears old offsets
+PASS viewport: repeated same layout does not reset native
+PASS viewport: repeated video size preserves zoom for single-item loop
+PASS viewport: next video of SAME size still starts FIT
+PASS viewport: unknown size rejects native without NaN
+PASS viewport: resolution change resets zoom
+PASS viewport: malformed transform inputs are ignored
+PASS viewport: zero layout and unknown SAR safely handled
+PASS inspection gesture: vertical drag pans without switching
+PASS inspection gesture: diagonal and horizontal drags pan
+PASS inspection gesture: tiny jitter remains a tap candidate
+PASS inspection gesture: stationary middle hold still plays at 1x
+PASS inspection gesture: bottom hold keeps speed control, not pan
+PASS inspection gesture: pan cannot become hold after timeout
+PASS inspection gesture: cancellation cannot produce switch or tap
+PASS inspection gesture: after reset FIT vertical switching works
+PASS inspection gesture: native still respects system edges
+PASS fuzz: 10,000 viewports x 25 operations preserve crop/scale bounds
+PASS fuzz: 10,000 inspection streams never switch and balance holds
+
+ALL 103 TEST GROUPS PASSED (30,000 gesture streams + 10,000 geometry streams)
+
+> Task :core:jar UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:processDebugNavigationResources
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:generateDebugAndroidTestResValues UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugResources
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:parseDebugLocalResources
+> Task :app:l8DexDesugarLibDebug UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:processDebugResources
+
+> Task :app:compileDebugJavaWithJavac
+注: /Users/at/Documents/Player/FlowStream/app/src/main/java/dev/flowstream/player/ui/PlayerActivity.java使用或覆盖了已过时的 API。
+注: 有关详细信息, 请使用 -Xlint:deprecation 重新编译。
+
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:generateDebugLintReportModel
+> Task :app:generateDebugAndroidTestLintModel
+> Task :app:generateDebugUnitTestLintModel
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleDebug
+> Task :app:lintAnalyzeDebugAndroidTest
+> Task :app:lintAnalyzeDebugUnitTest
+> Task :app:lintAnalyzeDebug
+
+> Task :app:lintReportDebug
+Wrote HTML report to file:///Users/at/Documents/Player/FlowStream/app/build/reports/lint-results-debug.html
+
+> Task :app:lintDebug
+
+[Incubating] Problems report is available at: file:///Users/at/Documents/Player/FlowStream/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.13/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 9s
+50 actionable tasks: 21 executed, 29 up-to-date
+
+构建成功。默认 Debug APK: app/build/outputs/apk/debug/app-debug.apk

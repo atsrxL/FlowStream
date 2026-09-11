@@ -1,0 +1,2 @@
+PASS Java syntax parse: 30 source files.
+NOT an Android build: external types, APIs, resources and device behavior were not checked here.

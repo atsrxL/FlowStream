@@ -1,0 +1,4 @@
+FAIL java.lang.NullPointerException: Attempt to invoke virtual method 'void dev.flowstream.player.data.Store.saveServer(dev.flowstream.player.data.Server)' on a null object reference
+	at dev.flowstream.player.DeviceChecks.onStart(DeviceChecks.java:35)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2599)
+

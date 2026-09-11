@@ -1,0 +1,7 @@
+PASS fixture rejects unauthenticated request
+PASS fixture multistatus and UTF-8 paths
+PASS fixture byte-range seek
+PASS fixture range beyond EOF
+PASS fixture rejects path traversal
+PASS fixture HEAD without response body
+ALL 6 fixture checks passed. Android client interoperability is NOT tested by these checks.

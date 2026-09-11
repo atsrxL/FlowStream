@@ -1,0 +1,33 @@
+PASS WEBDAV authenticated directory listing
+PASS real decoder READY
+PASS network video advances
+PASS single tap pauses
+PASS paused clock stays still
+PASS double tap native mode
+PASS native width is 640 render pixels
+PASS double tap preserves pause
+PASS native drag does not switch
+PASS small native video stays centered
+PASS double tap restores FIT
+PASS two-pointer MotionEvents zoom
+PASS pinch and remaining finger preserve item and pause
+PASS short swipe dead zone
+PASS WEBDAV authenticated directory listing
+PASS real decoder READY
+PASS network video advances
+PASS single tap pauses
+PASS paused clock stays still
+PASS double tap native mode
+PASS native width is 640 render pixels
+PASS double tap preserves pause
+PASS native drag does not switch
+PASS small native video stays centered
+PASS double tap restores FIT
+PASS two-pointer MotionEvents zoom
+PASS pinch and remaining finger preserve item and pause
+PASS short swipe dead zone
+FAIL java.lang.AssertionError: upward swipe opens next video
+	at dev.flowstream.player.DeviceChecks.check(DeviceChecks.java:26)
+	at dev.flowstream.player.DeviceChecks.onStart(DeviceChecks.java:42)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2599)
+

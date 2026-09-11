@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Arbitrary LAN hosts cannot be enumerated here. The app blocks HTTP unless
+         the individual server explicitly opts in. TLS trust is never disabled. -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors><certificates src="system" /></trust-anchors>
+    </base-config>
+</network-security-config>

@@ -1,0 +1,40 @@
+name: Android debug APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Android SDK packages
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Core regression, Android lint, and debug APK
+        run: gradle --no-daemon :core:selfTest :app:lintDebug :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: FlowStream-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-validation-reports
+          path: |
+            app/build/reports/
+            core/build/reports/
+          if-no-files-found: ignore

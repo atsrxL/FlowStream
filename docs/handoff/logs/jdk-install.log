@@ -1,0 +1,227 @@
+==> Auto-updating Homebrew...
+Adjust how often this is run with `$HOMEBREW_AUTO_UPDATE_SECS` or disable with
+`$HOMEBREW_NO_AUTO_UPDATE=1`. Hide these hints with `$HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
+==> Auto-updated Homebrew!
+Updated 4 taps (steipete/tap, openclaw/tap, homebrew/core and homebrew/cask).
+==> New Formulae
+elasticmq: In-memory message queue with an Amazon SQS-compatible interface
+forgejo-runner: Official Actions runner for Forgejo instances
+hister: Self-hosted search engine for your browsing history
+libmysofa: Reader for AES SOFA files to get better HRTFs
+ntfs2btrfs: In-place conversion of NTFS filesystem to Btrfs
+openclaw/tap/clawdex
+openclaw/tap/ocm
+osctrl-mcp: Fast and efficient osquery management
+pnpm@11: Fast, disk space efficient package manager
+robot-framework-robocop: Static code analysis tool (linter) and code formatter for Robot Framework
+rubocop: Ruby static code analyzer and formatter, based on the community Ruby style guide
+snx-rs: Open-source client for Check Point VPN tunnels
+trealla-prolog: Compact and efficient ISO Prolog interpreter written in plain old C
+xevd: Very fast Essential Video Decoder, MPEG-5 EVC (Essential Video Coding)
+==> New Casks
+agentide: IDE for agent-based development
+audacity@3: Multi-track audio editor and recorder
+easymac-cleaner: Cleaning, privacy, and system optimisation utility
+flick: Radial command wheel triggered by holding a key and flicking the mouse
+font-clarity-city
+font-isometra
+font-kripa
+font-libre-caslon-condensed
+font-pyeojin-gothic
+gamemaker@beta: Complete development tool for making 2D games
+homebrew-app: Homebrew's official GUI
+mangodisk: Disk cleaner and storage analyser
+minmaxcal: Minimal menu bar calendar, maximal full-screen notifications
+omniwm: Tiling window manager
+open-science: AI research workbench with scientific agents and notebooks
+privacynotes: End-to-end encrypted notes, tasks, files, journal, passwords and bookmark sync
+psysonic: Desktop client for Navidrome and other Subsonic-compatible servers
+stockbit: Indonesian stock trading and analysis platform
+sxitch: Tree-based app switcher
+tabularis@nightly: Lightweight database management tool
+wsl-manager: Manage native Linux VMs and remote WSL distros
+zentty: Terminal for agent-driven development
+
+You have 27 outdated formulae and 3 outdated casks installed.
+
+Warning: The following taps are not trusted:
+  antoniorodr/memo
+  openclaw/tap
+  steipete/tap
+  teamookla/speedtest
+
+Homebrew is currently ignoring formulae, casks and commands from these taps because tap trust is required.
+
+Prefer trusting only the specific formulae, casks or commands you need.
+Trust installed formulae from these taps with:
+  brew trust --formula antoniorodr/memo/memo
+  brew trust --formula openclaw/tap/gogcli
+  brew trust --formula steipete/tap/imsg steipete/tap/peekaboo
+  brew trust --formula teamookla/speedtest/speedtest
+Trust other specific casks and commands with:
+  brew trust --cask <user>/<tap>/<cask>
+  brew trust --command <user>/<tap>/<command>
+Whole-tap trust is broader and includes all current and future formulae,
+casks and commands from the listed taps. Trust whole taps with:
+  brew trust antoniorodr/memo openclaw/tap steipete/tap teamookla/speedtest
+Untap them with:
+  brew untap antoniorodr/memo openclaw/tap steipete/tap teamookla/speedtest
+To disable trust checks:
+  export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+This is not recommended and will be removed in a later release.
+For more information, see:
+  https://docs.brew.sh/Tap-Trust
+==> Downloading bottle manifests
+✔︎ Bottle Manifest openjdk@17 (17.0.20.1)
+==> Would install 1 formula:
+openjdk@17
+==> Would install 21 dependencies for openjdk@17:
+libpng
+freetype
+giflib
+fontconfig
+glib
+xorgproto
+libxau
+libxdmcp
+libxcb
+libx11
+libxext
+libxrender
+lzo
+pixman
+cairo
+graphite2
+harfbuzz
+jpeg-turbo
+webp
+libtiff
+little-cms2
+==> Would upgrade 1 dependency for openjdk@17:
+pcre2
+==> Fetching downloads for: openjdk@17
+✔︎ Bottle Manifest libpng (1.6.58)
+✔︎ Bottle Manifest freetype (2.14.3)
+✔︎ Bottle Manifest giflib (6.1.3)
+✔︎ Bottle Manifest pcre2 (10.48)
+✔︎ Bottle Manifest xorgproto (2025.1)
+✔︎ Bottle Manifest libxau (1.0.12)
+✔︎ Bottle Manifest libxdmcp (1.1.5)
+✔︎ Bottle Manifest libxcb (1.17.0)
+✔︎ Bottle Manifest fontconfig (2.18.3)
+✔︎ Bottle Manifest glib (2.88.3)
+✔︎ Bottle libxau (1.0.12)
+✔︎ Bottle Manifest libx11 (1.8.13)
+✔︎ Bottle pcre2 (10.48)
+✔︎ Bottle libxdmcp (1.1.5)
+✔︎ Bottle giflib (6.1.3)
+✔︎ Bottle Manifest lzo (2.10)
+✔︎ Bottle libpng (1.6.58)
+✔︎ Bottle fontconfig (2.18.3)
+✔︎ Bottle Manifest libxext (1.3.7)
+✔︎ Bottle Manifest libxrender (0.9.12)
+✔︎ Bottle freetype (2.14.3)
+✔︎ Bottle Manifest pixman (0.46.4)
+✔︎ Bottle libxext (1.3.7)
+✔︎ Bottle Manifest cairo (1.18.4)
+✔︎ Bottle Manifest jpeg-turbo (3.2.0)
+✔︎ Bottle lzo (2.10)
+✔︎ Bottle libxrender (0.9.12)
+✔︎ Bottle Manifest graphite2 (1.3.15)
+✔︎ Bottle Manifest webp (1.6.0)
+✔︎ Bottle xorgproto (2025.1)
+✔︎ Bottle glib (2.88.3)
+✔︎ Bottle Manifest libtiff (4.7.2)
+✔︎ Bottle Manifest harfbuzz (14.4.0)
+✔︎ Bottle libxcb (1.17.0)
+✔︎ Bottle Manifest little-cms2 (2.19.1)
+✔︎ Bottle harfbuzz (14.4.0)
+✔︎ Bottle pixman (0.46.4)
+✔︎ Bottle libx11 (1.8.13)
+✔︎ Bottle graphite2 (1.3.15)
+✔︎ Bottle cairo (1.18.4)
+✔︎ Bottle jpeg-turbo (3.2.0)
+✔︎ Bottle webp (1.6.0)
+✔︎ Bottle little-cms2 (2.19.1)
+✔︎ Bottle libtiff (4.7.2)
+✔︎ Bottle openjdk@17 (17.0.20.1)
+==> Installing dependencies for openjdk@17: libpng, freetype, giflib, fontconfig, glib, xorgproto, libxau, libxdmcp, libxcb, libx11, libxext, libxrender, lzo, pixman, cairo, graphite2, harfbuzz, jpeg-turbo, webp, libtiff and little-cms2
+==> Installing openjdk@17 dependency: libpng
+==> Pouring libpng--1.6.58.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/libpng/1.6.58: 28 files, 1.4MB
+==> Installing openjdk@17 dependency: freetype
+==> Pouring freetype--2.14.3.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/freetype/2.14.3: 68 files, 2.7MB
+==> Installing openjdk@17 dependency: giflib
+==> Pouring giflib--6.1.3.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/giflib/6.1.3: 19 files, 494.5KB
+==> Installing openjdk@17 dependency: fontconfig
+==> Pouring fontconfig--2.18.3.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/fontconfig/2.18.3: 102 files, 1.9MB
+==> Installing openjdk@17 dependency: glib
+==> Pouring glib--2.88.3.arm64_sequoia.bottle.1.tar.gz
+🍺  /opt/homebrew/Cellar/glib/2.88.3: 501 files, 39.7MB
+==> Installing openjdk@17 dependency: xorgproto
+==> Pouring xorgproto--2025.1.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/xorgproto/2025.1: 268 files, 4.1MB
+==> Installing openjdk@17 dependency: libxau
+==> Pouring libxau--1.0.12.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/libxau/1.0.12: 21 files, 117.2KB
+==> Installing openjdk@17 dependency: libxdmcp
+==> Pouring libxdmcp--1.1.5.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/libxdmcp/1.1.5: 12 files, 123.0KB
+==> Installing openjdk@17 dependency: libxcb
+==> Pouring libxcb--1.17.0.arm64_sequoia.bottle.1.tar.gz
+🍺  /opt/homebrew/Cellar/libxcb/1.17.0: 2,498 files, 7.4MB
+==> Installing openjdk@17 dependency: libx11
+==> Pouring libx11--1.8.13.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/libx11/1.8.13: 1,043 files, 7.3MB
+==> Installing openjdk@17 dependency: libxext
+==> Pouring libxext--1.3.7.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/libxext/1.3.7: 88 files, 448.8KB
+==> Installing openjdk@17 dependency: libxrender
+==> Pouring libxrender--0.9.12.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/libxrender/0.9.12: 13 files, 206.3KB
+==> Installing openjdk@17 dependency: lzo
+==> Pouring lzo--2.10.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/lzo/2.10: 32 files, 562.2KB
+==> Installing openjdk@17 dependency: pixman
+==> Pouring pixman--0.46.4.arm64_sequoia.bottle.1.tar.gz
+🍺  /opt/homebrew/Cellar/pixman/0.46.4: 11 files, 1.4MB
+==> Installing openjdk@17 dependency: cairo
+==> Pouring cairo--1.18.4.arm64_sequoia.bottle.2.tar.gz
+🍺  /opt/homebrew/Cellar/cairo/1.18.4: 58 files, 4.6MB
+==> Installing openjdk@17 dependency: graphite2
+==> Pouring graphite2--1.3.15.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/graphite2/1.3.15: 19 files, 257KB
+==> Installing openjdk@17 dependency: harfbuzz
+==> Pouring harfbuzz--14.4.0.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/harfbuzz/14.4.0: 96 files, 13.6MB
+==> Installing openjdk@17 dependency: jpeg-turbo
+==> Pouring jpeg-turbo--3.2.0.arm64_sequoia.bottle.1.tar.gz
+🍺  /opt/homebrew/Cellar/jpeg-turbo/3.2.0: 47 files, 4.2MB
+==> Installing openjdk@17 dependency: webp
+==> Pouring webp--1.6.0.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/webp/1.6.0: 64 files, 2.5MB
+==> Installing openjdk@17 dependency: libtiff
+==> Pouring libtiff--4.7.2.arm64_sequoia.bottle.2.tar.gz
+🍺  /opt/homebrew/Cellar/libtiff/4.7.2: 493 files, 9.0MB
+==> Installing openjdk@17 dependency: little-cms2
+==> Pouring little-cms2--2.19.1.arm64_sequoia.bottle.1.tar.gz
+🍺  /opt/homebrew/Cellar/little-cms2/2.19.1: 23 files, 1.4MB
+==> Installing openjdk@17
+==> Pouring openjdk@17--17.0.20.1.arm64_sequoia.bottle.tar.gz
+🍺  /opt/homebrew/Cellar/openjdk@17/17.0.20.1: 635 files, 319.5MB
+==> Caveats
+==> openjdk@17
+For the system Java wrappers to find this JDK, symlink it with
+  sudo ln -sfn /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+
+openjdk@17 is keg-only, which means it was not symlinked into /opt/homebrew,
+because this is an alternate version of another formula.
+
+If you need to have openjdk@17 first in your PATH, run:
+  echo 'export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"' >> ~/.zshrc
+
+For compilers to find openjdk@17 you may need to set:
+  export CPPFLAGS="-I/opt/homebrew/opt/openjdk@17/include"

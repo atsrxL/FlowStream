@@ -1,0 +1,75 @@
+PASS WEBDAV authenticated directory listing
+PASS real decoder READY
+PASS network video advances
+PASS single tap pauses
+PASS paused clock stays still
+PASS double tap native mode
+PASS native width is 640 render pixels
+PASS double tap preserves pause
+PASS native drag does not switch
+PASS small native video stays centered
+PASS double tap restores FIT
+PASS two-pointer MotionEvents zoom
+PASS pinch and remaining finger preserve item and pause
+PASS short swipe dead zone
+PASS upward swipe opens next video
+PASS pause second video
+PASS lower hold plays at 2x
+PASS release restores pause
+PASS middle hold enters sampled reverse
+PASS CANCEL restores pause and ends hold
+PASS single item loops without advancing queue
+PASS session saves index and position
+PASS history restores network offset
+PASS gesture lock blocks playback tap
+PASS forward one-second control
+PASS A-B repeats inside interval
+PASS remote seek thumbnail extraction
+PASS preload creates bounded reusable cache
+PASS new hold speed limits
+PASS explicit rotate changes orientation
+PASS rotation resets viewport FIT
+PASS rotation preserves pause
+PASS system PiP enters on device
+PASS PiP resets zoom
+PASS PiP expands back into player
+PASS background releases decoder
+PASS foreground recreates playback
+PASS WEBDAV authenticated directory listing
+PASS real decoder READY
+PASS network video advances
+PASS single tap pauses
+PASS paused clock stays still
+PASS double tap native mode
+PASS native width is 640 render pixels
+PASS double tap preserves pause
+PASS native drag does not switch
+PASS small native video stays centered
+PASS double tap restores FIT
+PASS two-pointer MotionEvents zoom
+PASS pinch and remaining finger preserve item and pause
+PASS short swipe dead zone
+PASS upward swipe opens next video
+PASS pause second video
+PASS lower hold plays at 2x
+PASS release restores pause
+PASS middle hold enters sampled reverse
+PASS CANCEL restores pause and ends hold
+PASS single item loops without advancing queue
+PASS session saves index and position
+PASS history restores network offset
+PASS gesture lock blocks playback tap
+PASS forward one-second control
+PASS A-B repeats inside interval
+PASS remote seek thumbnail extraction
+PASS preload creates bounded reusable cache
+PASS new hold speed limits
+PASS explicit rotate changes orientation
+PASS rotation resets viewport FIT
+PASS rotation preserves pause
+PASS system PiP enters on device
+PASS PiP resets zoom
+PASS PiP expands back into player
+PASS background releases decoder
+PASS foreground recreates playback
+

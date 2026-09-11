@@ -1,0 +1,19 @@
+PASS 6 Android XML files are well-formed
+PASS entry class exists: dev.flowstream.player.FlowApp
+PASS entry class exists: dev.flowstream.player.ui.SettingsActivity
+PASS entry class exists: dev.flowstream.player.ui.PlayerActivity
+PASS entry class exists: dev.flowstream.player.ui.MainActivity
+PASS backup remains disabled
+PASS no overlay permission added
+PASS video layout uses Media3 PlayerView
+PASS video layout explicitly selects TextureView
+PASS video layout delegates aspect/FIT to texture matrix exactly once
+PASS built-in controller is disabled
+PASS Activity inflates the texture-backed video layout
+PASS confirmed clicks are wired to pause/resume
+PASS Activity connects video transform controller
+PASS single-video repeat remains enabled
+PASS Android version is 0.2.0 / 2
+PASS application ID is unchanged
+PASS no unbuilt APK is bundled
+Static checks only: Android type/API/resource/device validation NOT performed.
