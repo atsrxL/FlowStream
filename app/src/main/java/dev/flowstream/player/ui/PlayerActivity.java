@@ -257,8 +257,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     @Override public boolean inspectAt(float x,float y){return transform!=null && transform.inspectAt(x,y);}
     @Override public boolean inspectMode(){return transform!=null && transform.inspectMode();}
     @Override public void singleTap(float x,float y){if(inPip())return;if(transform.imageAt(x,y,gestures))togglePlayback();else toggleControls();}
-    @Override public void doubleTap(float x,float y){if(!inPip())fitVideo();}
-    @Override public void tripleTap(){if(inPip())return;transform.cyclePreset();if(server!=null)app.store.saveSourcePreset(server.id,transform.presetIndex());counter.setText(transform.label()+" · 上下滑切片");}
+    @Override public void doubleTap(float x,float y){if(inPip())return;transform.cyclePreset();if(server!=null)app.store.saveSourcePreset(server.id,transform.presetIndex());counter.setText(transform.label()+" · 上下滑切片");flash(transform.label());showControls();}
     @Override public void panPixels(float dx,float dy){if(transform!=null)transform.pan(dx,dy);}
     @Override public void pinch(float factor,float previousX,float previousY,float x,float y){
         if(transform==null || inPip())return;

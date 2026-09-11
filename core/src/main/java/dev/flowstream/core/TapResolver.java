@@ -7,7 +7,7 @@ package dev.flowstream.core;
  * Coordinates are rendering pixels, times are monotonic milliseconds.
  */
 public final class TapResolver {
-    public interface Output { void singleTap(); void doubleTap(float x, float y); }
+    public interface Output { void singleTap(); default void singleTapAt(float x,float y){singleTap();} void doubleTap(float x, float y); }
     private final Output out;
     private final long timeoutMs;
     private final float distancePx;
@@ -21,7 +21,7 @@ public final class TapResolver {
     public void down(float x, float y, long now) {
         candidate = pending && now >= firstUp && now - firstUp <= timeoutMs
                 && Math.hypot(x - firstX, y - firstY) <= distancePx;
-        if (pending && !candidate) { pending = false; out.singleTap(); }
+        if (pending && !candidate) { pending = false; out.singleTapAt(firstX,firstY); }
         down = true; downAt = now; downX = x; downY = y;
     }
     public void up(boolean eligibleTap, float x, float y, long now) {
@@ -34,7 +34,7 @@ public final class TapResolver {
         pending = true; candidate = false; firstUp = now; firstX = x; firstY = y;
     }
     public void confirm(long now) {
-        if (pending && !down && now - firstUp >= timeoutMs) { pending = false; out.singleTap(); }
+        if (pending && !down && now - firstUp >= timeoutMs) { pending = false; out.singleTapAt(firstX,firstY); }
     }
     /** -1 means no timer is needed; the Android adapter uses Handler.postAtTime. */
     public long deadline() { return pending && !down ? firstUp + timeoutMs : -1; }

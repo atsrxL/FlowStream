@@ -1,3 +1,7 @@
+# FlowStream 0.6.3 · 双击立即切换适屏模式
+
+[APK](dist/FlowStream-0.6.3-debug.apk) · [完整交互](docs/GESTURES.md) · [验收](docs/handoff/RESULTS-0.6.3.md)。
+
 # FlowStream 0.6.2 · 图像与黑边点击分区
 
 [APK](dist/FlowStream-0.6.2-debug.apk) · [当前验收](docs/handoff/RESULTS-0.6.2.md) · [完整交互](docs/GESTURES.md)。

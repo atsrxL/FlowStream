@@ -30,7 +30,7 @@ public final class VideoTransformController {
     public void pan(float dx,float dy){if(inspectMode()){viewport.pan(dx,dy);apply();}}
     public void pinch(float factor,float ox,float oy,float x,float y){viewport.pinch(factor,ox,oy,x,y);apply();}
     public void finish(){viewport.finishTransform();apply();}
-    public String label(){if(inspectMode())return String.format(Locale.ROOT,"自定义缩放 %.2f× · 拖动画面 · 三击恢复宽度适屏",viewport.relativeToFit());return presetIndex()==0?"1 · 宽度适屏":presetIndex()==1?"2 · 高度适屏":"3 · 原始大小";}
+    public String label(){if(inspectMode())return String.format(Locale.ROOT,"自定义缩放 %.2f× · 拖动画面 · 双击恢复宽度适屏",viewport.relativeToFit());return presetIndex()==0?"1 · 宽度适屏":presetIndex()==1?"2 · 高度适屏":"3 · 原始大小";}
     private void apply(){
         texture.setPivotX(0);texture.setPivotY(0);
         boolean ready=viewport.ready()&&texture.getWidth()>0&&texture.getHeight()>0;
