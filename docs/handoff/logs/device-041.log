@@ -1,0 +1,37 @@
+PASS WEBDAV authenticated directory listing
+PASS real decoder READY
+PASS network video advances
+PASS single tap pauses
+PASS paused clock stays still
+PASS double tap native mode
+PASS native width is 640 render pixels
+PASS double tap preserves pause
+PASS native drag does not switch
+PASS small native video stays centered
+PASS native black-bar upward swipe changes video
+PASS native black-bar downward swipe returns previous
+PASS fit control restores swipe mode
+PASS fit control clears saved native preference
+PASS double tap restores FIT
+PASS two-pointer MotionEvents zoom
+PASS WEBDAV authenticated directory listing
+PASS real decoder READY
+PASS network video advances
+PASS single tap pauses
+PASS paused clock stays still
+PASS double tap native mode
+PASS native width is 640 render pixels
+PASS double tap preserves pause
+PASS native drag does not switch
+PASS small native video stays centered
+PASS native black-bar upward swipe changes video
+PASS native black-bar downward swipe returns previous
+PASS fit control restores swipe mode
+PASS fit control clears saved native preference
+PASS double tap restores FIT
+PASS two-pointer MotionEvents zoom
+FAIL java.lang.AssertionError: pinch and remaining finger preserve item and pause
+	at dev.flowstream.player.DeviceChecks.check(DeviceChecks.java:26)
+	at dev.flowstream.player.DeviceChecks.onStart(DeviceChecks.java:41)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2599)
+

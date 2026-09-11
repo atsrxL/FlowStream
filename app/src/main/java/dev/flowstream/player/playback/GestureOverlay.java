@@ -12,6 +12,7 @@ import dev.flowstream.core.TapResolver;
 public final class GestureOverlay extends View {
     public interface Output extends GestureMachine.Output {
         boolean inspectMode();
+        default boolean inspectAt(float x,float y){return inspectMode();}
         void doubleTap(float xPx, float yPx);
         void panPixels(float dxPx, float dyPx);
         void pinch(float factor, float previousX, float previousY, float focusX, float focusY);
@@ -83,7 +84,7 @@ public final class GestureOverlay extends View {
             active = true; blocked = multi = tapEligible = false;
             pointer = e.getPointerId(0); lastX = e.getX(); lastY = e.getY();
             machine.down(lastX/density,lastY/density,getWidth()/density,getHeight()/density,
-                    touchSlop/density,e.getEventTime(),output.inspectMode());
+                    touchSlop/density,e.getEventTime(),output.inspectAt(lastX,lastY));
             if (machine.mode() == GestureMachine.Mode.REJECTED) {
                 cancelGesture(); return false; // Leave OS navigation edges alone.
             }

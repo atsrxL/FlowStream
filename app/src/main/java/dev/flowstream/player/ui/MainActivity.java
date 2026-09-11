@@ -45,7 +45,7 @@ public final class MainActivity extends BackActivity {
         progress=new ProgressBar(this); root.addView(progress,new LinearLayout.LayoutParams(-1,Ui.dp(this,36)));
         FrameLayout content=new FrameLayout(this); list=new ListView(this); list.setDividerHeight(1);
         list.setDivider(new android.graphics.drawable.ColorDrawable(Ui.PANEL)); content.addView(list,new FrameLayout.LayoutParams(-1,-1));
-        empty=Ui.text(this,"在设置中添加并选择服务器\n支持 SMB / Samba、WebDAV\nZFS 存储通过共享协议访问",16,Ui.MUTED);
+        empty=Ui.text(this,"在设置中添加并选择服务器\n支持 SMB / Samba、WebDAV",16,Ui.MUTED);
         empty.setGravity(Gravity.CENTER); Ui.pad(empty,24); content.addView(empty,new FrameLayout.LayoutParams(-1,-1)); list.setEmptyView(empty);
         root.addView(content,new LinearLayout.LayoutParams(-1,0,1)); setContentView(root); Ui.safeInsets(this,root);
         list.setOnItemClickListener((p,v,pos,id)->open(pos));

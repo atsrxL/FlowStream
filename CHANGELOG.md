@@ -30,4 +30,4 @@
 
 ## 未改变的已知限制
 
-反向回看仍为离散反向 seek，不是真正逐帧倒播。ZFS 通过 SMB／WebDAV 导出接入。小窗仍为系统 PiP。TextureView 存在功耗、帧时序、HDR 和系统低分辨率合成方面的取舍，详见 README 与官方来源。
+反向回看仍为离散反向 seek，不是真正逐帧倒播。小窗仍为系统 PiP。TextureView 存在功耗、帧时序、HDR 和系统低分辨率合成方面的取舍，详见 README 与官方来源。

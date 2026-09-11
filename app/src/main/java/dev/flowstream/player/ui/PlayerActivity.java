@@ -121,6 +121,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         circle(extras,"☆",()->bookmark(true)).setContentDescription("收藏");
         speedButton=circle(extras,"◴",this::speedMenu);speedButton.setContentDescription("播放速度");
         randomButton=circle(extras,"⇄",this::toggleRandom);randomButton.setContentDescription("随机播放开关");
+        circle(extras,"适屏",this::fitVideo).setContentDescription("恢复适屏，启用画面上下滑切片");
         circle(extras,"⟳",this::rotate).setContentDescription("旋转");
         lockButton=circle(extras,"锁",this::toggleLock);bottom.addView(extras);
         preview=new ImageView(this);preview.setScaleType(ImageView.ScaleType.FIT_CENTER);preview.setVisibility(View.GONE);
@@ -177,7 +178,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
                     showError("播放失败："+e.getErrorCodeName()+"\n请检查网络、读取权限及视频编码。可重试或切换其他视频。");checkpoint();
                 }
                 @Override public void onTracksChanged(Tracks tracks){if(trick!=null)trick.tracksChanged();}
-                @Override public void onVideoSizeChanged(VideoSize size){gestures.cancelGesture();transform.onVideoSize(size);if(server!=null && app.store.sourceNative(server.id) && !transform.inspectMode())transform.toggleNative(root.getWidth()/2f,root.getHeight()/2f);updatePipParams();}
+                @Override public void onVideoSizeChanged(VideoSize size){gestures.cancelGesture();transform.onVideoSize(size);if(server!=null && app.store.sourceNative(server.id) && !transform.inspectMode()){transform.toggleNative(root.getWidth()/2f,root.getHeight()/2f);counter.setText("原始尺寸 · 画面内拖动 / 黑边上下切片 · 适屏按钮复位");}updatePipParams();}
                 @Override public void onPlayWhenReadyChanged(boolean ready,int reason){
                     if(!ready && (reason==Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS || reason==Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY)){
                         scrubResume=false;cancelScrub();if(trick!=null)trick.doNotResumeAfterHold();gestures.cancelGesture();
@@ -219,10 +220,11 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         showControls();hud.setVisibility(View.GONE);checkpoint();
     }
     @Override public void tap(){gestures.performClick();}
+    @Override public boolean inspectAt(float x,float y){return transform!=null && transform.inspectAt(x,y);}
     @Override public boolean inspectMode(){return transform!=null && transform.inspectMode();}
     @Override public void doubleTap(float x,float y){
         if(inPip() || transform==null)return;
-        boolean changed=transform.toggleNative(x,y);if(changed){if(server!=null && trick!=null)app.store.saveSourcePlayback(server.id,trick.baseSpeed(),transform.inspectMode());counter.setText(transform.label());}else flash("视频尺寸尚未就绪");
+        boolean changed=transform.toggleNative(x,y);if(changed){if(server!=null && trick!=null)app.store.saveSourcePlayback(server.id,trick.baseSpeed(),transform.inspectMode());counter.setText(transform.inspectMode()?"原始尺寸 · 画面内拖动 / 黑边上下切片":transform.label());}else flash("视频尺寸尚未就绪");
     }
     @Override public void panPixels(float dx,float dy){if(transform!=null)transform.pan(dx,dy);}
     @Override public void pinch(float factor,float previousX,float previousY,float x,float y){
@@ -275,6 +277,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         row.addView(b,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));return b;
     }
     private void updateAb(){if(abButton!=null){abButton.setText(loopB>loopA&&loopA>=0?"A↔B":loopA>=0?"A/•":"A/B");abButton.setTextColor(loopA>=0?0xff65b5ff:Ui.TEXT);}}
+    private void fitVideo(){gestures.cancelGesture();transform.resetFit();if(server!=null&&trick!=null)app.store.saveSourcePlayback(server.id,trick.baseSpeed(),false);counter.setText("适应屏幕 · 上滑下一条 / 下滑上一条");showControls();}
     private void cycleAb(){
         if(player==null||!player.isCurrentMediaItemSeekable())return;gestures.cancelGesture();
         if(loopA<0){loopA=player.getCurrentPosition();loopB=-1;}

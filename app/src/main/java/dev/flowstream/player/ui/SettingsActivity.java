@@ -32,11 +32,11 @@ public final class SettingsActivity extends BackActivity {
         body.addView(Ui.text(this,"当前来源",18,Ui.BLUE));
         body.addView(Ui.text(this,"点击服务器选择；编辑与删除按钮在每条记录下方。",13,Ui.MUTED));servers=Ui.column(this);body.addView(servers);
         body.addView(Ui.button(this,"＋ 添加服务器",()->form(new Server())));
-        TextView info=Ui.text(this,"ZFS 是文件系统，不是客户端访问协议。\nZFS / TrueNAS 数据集请先由服务器通过 SMB 或 WebDAV 共享，再在这里配置。此版不含 NFS 客户端。\n\n连接仅用于读取目录和播放，不会修改服务器文件。WebDAV 支持 Basic 认证或匿名访问，不支持 Digest / OAuth。",14,Ui.MUTED);info.setPadding(0,Ui.dp(this,18),0,Ui.dp(this,18));body.addView(info);
+        TextView info=Ui.text(this,"连接仅用于读取目录和播放，不会修改服务器文件。WebDAV 支持 Basic 认证或匿名访问，不支持 Digest / OAuth。",14,Ui.MUTED);info.setPadding(0,Ui.dp(this,18),0,Ui.dp(this,18));body.addView(info);
         body.addView(Ui.button(this,"清除全部会话历史",()->new AlertDialog.Builder(this).setTitle("清除本机会话历史？")
                 .setMessage("不会删除服务器配置和媒体文件。正在播放的会话关闭后也不会自动恢复此历史。")
                 .setNegativeButton("取消",null).setPositiveButton("清除",(d,w)->app.disk.execute(()->{app.store.clearHistory();app.main.post(()->Ui.toast(this,"会话历史已清除"));})).show()));
-        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存；历史保留在本机，已关闭应用备份。无广告、无统计 SDK、无整片磁盘缓存。\nFlowStream 0.4.0 · 缩略图与随机播放",13,Ui.MUTED));
+        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存；历史保留在本机，已关闭应用备份。无广告、无统计 SDK、无整片磁盘缓存。\nFlowStream 0.4.1 · 缩略图与随机播放",13,Ui.MUTED));
         setContentView(root);Ui.safeInsets(this,root);refresh();
     }
     private void refresh(){final int token=++generation;app.disk.execute(()->{
@@ -59,7 +59,7 @@ public final class SettingsActivity extends BackActivity {
     private void form(Server existing){
         ScrollView scroll=new ScrollView(this);LinearLayout body=Ui.column(this);Ui.pad(body,18);scroll.addView(body);
         EditText name=field(body,"名称",existing.name,InputType.TYPE_CLASS_TEXT);
-        Spinner protocol=new Spinner(this);protocol.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"SMB / Samba（含 ZFS 共享）","WebDAV（含 ZFS 共享）"}));
+        Spinner protocol=new Spinner(this);protocol.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"SMB / Samba","WebDAV"}));
         protocol.setSelection(existing.protocol.equals("SMB")?0:1);body.addView(protocol);
         LinearLayout smb=Ui.column(this);body.addView(smb);
         EditText host=field(smb,"主机 IP / 域名（不含 smb://）",existing.host,InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);

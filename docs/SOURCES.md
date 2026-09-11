@@ -23,8 +23,6 @@
 10. SMBJ 文件随机读取和配置实现：
     https://github.com/hierynomus/smbj/blob/v0.14.0/src/main/java/com/hierynomus/smbj/share/File.java
     https://github.com/hierynomus/smbj/blob/v0.14.0/src/main/java/com/hierynomus/smbj/SmbConfig.java
-11. OpenZFS `zfs-share`，服务端共享导出：
-    https://openzfs.github.io/openzfs-docs/man/master/8/zfs-share.8.html
 12. Gradle 官方发行包和同源校验文件（由构建脚本实际请求）：
     https://services.gradle.org/distributions/gradle-8.13-bin.zip
     https://services.gradle.org/distributions/gradle-8.13-bin.zip.sha256

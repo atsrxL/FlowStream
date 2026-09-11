@@ -1,0 +1,87 @@
+PASS WEBDAV authenticated directory listing
+PASS real decoder READY
+PASS network video advances
+PASS single tap pauses
+PASS paused clock stays still
+PASS double tap native mode
+PASS native width is 640 render pixels
+PASS double tap preserves pause
+PASS native drag does not switch
+PASS small native video stays centered
+PASS native black-bar upward swipe changes video
+PASS native black-bar downward swipe returns previous
+PASS fit control restores swipe mode
+PASS fit control clears saved native preference
+PASS double tap restores FIT
+PASS two-pointer MotionEvents zoom
+PASS pinch and remaining finger preserve item and pause
+PASS short swipe dead zone
+PASS upward swipe opens next video
+PASS pause second video
+PASS lower hold plays at 2x
+PASS release restores pause
+PASS middle hold enters sampled reverse
+PASS CANCEL restores pause and ends hold
+PASS single item loops without advancing queue
+PASS session saves index and position
+PASS history restores network offset
+PASS gesture lock blocks playback tap
+PASS forward one-second control
+PASS A-B repeats inside interval
+PASS remote seek thumbnail extraction
+PASS preload creates bounded reusable cache
+PASS new hold speed limits
+PASS temporary hold still reaches 5x independently of menu
+PASS release restores exact menu speed
+PASS A/B circle sets both endpoints
+PASS AB inherits menu speed
+PASS play circle exits AB and continues playback
+PASS random up chooses unseen item
+PASS random down returns recorded previous
+PASS random never chooses watched item after backtracking
+PASS WEBDAV authenticated directory listing
+PASS real decoder READY
+PASS network video advances
+PASS single tap pauses
+PASS paused clock stays still
+PASS double tap native mode
+PASS native width is 640 render pixels
+PASS double tap preserves pause
+PASS native drag does not switch
+PASS small native video stays centered
+PASS native black-bar upward swipe changes video
+PASS native black-bar downward swipe returns previous
+PASS fit control restores swipe mode
+PASS fit control clears saved native preference
+PASS double tap restores FIT
+PASS two-pointer MotionEvents zoom
+PASS pinch and remaining finger preserve item and pause
+PASS short swipe dead zone
+PASS upward swipe opens next video
+PASS pause second video
+PASS lower hold plays at 2x
+PASS release restores pause
+PASS middle hold enters sampled reverse
+PASS CANCEL restores pause and ends hold
+PASS single item loops without advancing queue
+PASS session saves index and position
+PASS history restores network offset
+PASS gesture lock blocks playback tap
+PASS forward one-second control
+PASS A-B repeats inside interval
+PASS remote seek thumbnail extraction
+PASS preload creates bounded reusable cache
+PASS new hold speed limits
+PASS temporary hold still reaches 5x independently of menu
+PASS release restores exact menu speed
+PASS A/B circle sets both endpoints
+PASS AB inherits menu speed
+PASS play circle exits AB and continues playback
+PASS random up chooses unseen item
+PASS random down returns recorded previous
+PASS random never chooses watched item after backtracking
+FAIL java.lang.AssertionError: file thumbnail generated
+	at dev.flowstream.player.DeviceChecks.check(DeviceChecks.java:26)
+	at dev.flowstream.player.DeviceChecks.onStart(DeviceChecks.java:59)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2599)
+

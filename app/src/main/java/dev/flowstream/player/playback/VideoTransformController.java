@@ -25,6 +25,7 @@ public final class VideoTransformController {
             viewport.setViewport(r-l,b-t); apply();
         });
     }
+    public boolean inspectAt(float x,float y){return viewport.inspectMode() && x>=viewport.left() && x<=viewport.left()+viewport.width() && y>=viewport.top() && y<=viewport.top()+viewport.height();}
     public boolean inspectMode() { return viewport.inspectMode(); }
     public void onVideoSize(VideoSize size) { viewport.setVideoSize(size.width,size.height,size.pixelWidthHeightRatio); apply(); }
     public void newVideo() { viewport.clearVideo(); apply(); }
