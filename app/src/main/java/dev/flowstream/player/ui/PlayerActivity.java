@@ -34,7 +34,8 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     private PlayerView video;
     private GestureOverlay gestures;
     private VideoTransformController transform;
-    private LinearLayout top,bottom,errorBox;
+    private LinearLayout top,bottom,errorBox,timeline;
+    private long scrubStartPosition;
     private TextView title,counter,time,hud,errorMessage;
     private Button speedButton,pauseButton;
     private HoldSeekBar seek;
@@ -108,12 +109,12 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         buffering=new ProgressBar(this);FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48),Gravity.CENTER);root.addView(buffering,bp);
         loadingRate=Ui.text(this,"加载 · 0.0 KB/s",13,Ui.TEXT);loadingRate.setGravity(Gravity.CENTER);loadingRate.setBackground(Ui.background(0xaa000000,10,this));FrameLayout.LayoutParams rp=new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER);rp.topMargin=Ui.dp(this,84);root.addView(loadingRate,rp);
         hud=Ui.text(this,"",17,Ui.TEXT);hud.setGravity(Gravity.CENTER);Ui.pad(hud,16);hud.setBackground(Ui.background(0xb0000000,16,this));hud.setVisibility(View.GONE);
-        root.addView(hud,new FrameLayout.LayoutParams(-2,-2,Gravity.CENTER));
+        FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.CENTER_HORIZONTAL);hp.topMargin=Ui.dp(this,72);root.addView(hud,hp);
         top=Ui.column(this);top.setBackgroundColor(Color.TRANSPARENT);top.setPadding(Ui.dp(this,8),Ui.dp(this,8),Ui.dp(this,8),Ui.dp(this,10));
         title=Ui.text(this,"",15,Ui.TEXT);counter=Ui.text(this,"",12,Ui.MUTED);
         LinearLayout toolbar=Ui.row(this);
         toolbar.addView(new IconButton(this,"rotate","旋转",this::rotate),new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
-        toolbar.addView(new IconButton(this,"close","退出",this::back),new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
+        
         toolbar.addView(new IconButton(this,"pip","小窗",this::enterPip),new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
         speedButton=new IconButton(this,"speed","播放速度",this::speedMenu);toolbar.addView(speedButton,new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));top.addView(toolbar);
         root.addView(top,new FrameLayout.LayoutParams(-1,-2,Gravity.TOP));
@@ -121,9 +122,9 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         LinearLayout infoRow=Ui.row(this);
         infoRow.addView(new IconButton(this,"info","媒体信息",this::playbackInfo),new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));
         infoRow.addView(new View(this),new LinearLayout.LayoutParams(0,1,1));infoRow.addView(new IconButton(this,"more","菜单",this::fileMenu),new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));bottom.addView(infoRow);
-        LinearLayout timeline=Ui.row(this);
+        timeline=Ui.row(this);
         time=Ui.text(this,"00:00 / --:--",11,Ui.TEXT);time.setGravity(Gravity.CENTER);timeline.addView(time,new LinearLayout.LayoutParams(Ui.dp(this,96),Ui.dp(this,48)));
-        seek=new HoldSeekBar(this);seek.setMax(10000);seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setContentDescription("长按后拖动播放进度并预览缩略图");timeline.addView(seek,new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));bottom.addView(timeline);
+        seek=new HoldSeekBar(this);seek.setMax(10000);seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setContentDescription("长按后拖动播放进度并预览缩略图");timeline.addView(seek,new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
         LinearLayout buttons=Ui.row(this);buttons.setGravity(Gravity.CENTER);
         lockButton=new IconButton(this,"lock","锁定手势",this::toggleLock);buttons.addView(lockButton,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));
         circle(buttons,"-10s",()->seekBy(-10000,false));circle(buttons,"-2s",()->seekBy(-2000,false));
@@ -141,9 +142,11 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         preview=new ImageView(this);preview.setScaleType(ImageView.ScaleType.FIT_CENTER);preview.setVisibility(View.GONE);
         FrameLayout.LayoutParams previewParams=new FrameLayout.LayoutParams(Ui.dp(this,160),Ui.dp(this,90),Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);previewParams.bottomMargin=Ui.dp(this,176);root.addView(preview,previewParams);
         previewTime=Ui.text(this,"",12,Ui.TEXT);previewTime.setGravity(Gravity.CENTER);previewTime.setVisibility(View.GONE);FrameLayout.LayoutParams pt=new FrameLayout.LayoutParams(-2,-2,Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL);pt.bottomMargin=Ui.dp(this,154);root.addView(previewTime,pt);
-        root.addView(bottom,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
-        bottom.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
-            int margin=root.getHeight()-t-Ui.dp(this,48);
+        FrameLayout.LayoutParams menuParams=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);menuParams.bottomMargin=Ui.dp(this,56);root.addView(bottom,menuParams);
+        root.addView(timeline,new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM));
+        timeline.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{
+            FrameLayout.LayoutParams menu=(FrameLayout.LayoutParams)bottom.getLayoutParams();if(menu.bottomMargin!=b-t){menu.bottomMargin=b-t;bottom.setLayoutParams(menu);}
+            int margin=root.getHeight()-t;
             FrameLayout.LayoutParams imageParams=(FrameLayout.LayoutParams)preview.getLayoutParams();imageParams.bottomMargin=margin+Ui.dp(this,22);preview.setLayoutParams(imageParams);
             FrameLayout.LayoutParams labelParams=(FrameLayout.LayoutParams)previewTime.getLayoutParams();labelParams.bottomMargin=margin;previewTime.setLayoutParams(labelParams);
         });
@@ -162,7 +165,9 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
             root.setOnApplyWindowInsetsListener((v,insets)->{
                 android.graphics.Insets safe=insets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());
                 top.setPadding(safe.left+Ui.dp(this,8),safe.top+Ui.dp(this,6),safe.right+Ui.dp(this,8),Ui.dp(this,8));
-                bottom.setPadding(safe.left+Ui.dp(this,8),Ui.dp(this,6),safe.right+Ui.dp(this,8),safe.bottom+Ui.dp(this,8));return insets;
+                bottom.setPadding(safe.left+Ui.dp(this,8),Ui.dp(this,6),safe.right+Ui.dp(this,8),Ui.dp(this,8));
+                timeline.setPadding(safe.left+Ui.dp(this,8),0,safe.right+Ui.dp(this,8),safe.bottom+Ui.dp(this,4));
+                FrameLayout.LayoutParams hintParams=(FrameLayout.LayoutParams)hud.getLayoutParams();hintParams.topMargin=safe.top+Ui.dp(this,60);hud.setLayoutParams(hintParams);return insets;
             });
         }
         video.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->updatePipParams());showControls();
@@ -223,7 +228,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     }
     private boolean inPip(){return isInPictureInPictureMode() || pipTransition;}
     private void showControls(){
-        if(inPip())return;top.setVisibility(View.VISIBLE);bottom.setVisibility(View.VISIBLE);
+        if(inPip())return;timeline.setVisibility(View.VISIBLE);top.setVisibility(View.VISIBLE);bottom.setVisibility(View.VISIBLE);
         handler.removeCallbacks(hideControls);if(!gestureLocked && !scrubbing && player!=null && player.getPlayWhenReady())handler.postDelayed(hideControls,3500);
     }
     private void persistentHint(String text){
@@ -264,6 +269,18 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         transform.pinch(factor,previousX,previousY,x,y);counter.setText(transform.label());
     }
     @Override public void transformFinished(){if(transform!=null)transform.finish();}
+    @Override public void scrubStarted(){
+        if(player==null||!player.isCurrentMediaItemSeekable()||player.getDuration()<=0)return;
+        scrubbing=true;scrubStartPosition=player.getCurrentPosition();scrubResume=player.getPlayWhenReady();player.pause();handler.removeCallbacks(hideControls);
+    }
+    @Override public void scrubMoved(float totalDxDp,float widthDp){
+        if(!scrubbing||player==null)return;long duration=player.getDuration();long target=Math.max(0,Math.min(duration-1,scrubStartPosition+Math.round(totalDxDp/Math.max(1,widthDp)*duration)));
+        seek.setProgress((int)(target*10000d/duration));time.setText(Ui.time(target)+" / "+Ui.time(duration));showPreview(target);
+    }
+    @Override public void scrubEnded(boolean commit){
+        if(!scrubbing)return;if(commit&&player!=null&&player.getDuration()>0)player.seekTo(Math.min(player.getDuration()-1,(long)(player.getDuration()*seek.getProgress()/10000d)));
+        cancelScrub();checkpoint();
+    }
     @Override public void holdStarted(){if(trick!=null){trick.beginHold();handler.removeCallbacks(hideControls);top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);gestures.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);}}
     @Override public void forward(float speed){if(trick!=null)trick.forward(speed);}
     @Override public void reverse(float magnitude){if(trick!=null)trick.reverse(magnitude);}
@@ -397,13 +414,13 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(player==null)return;
         cancelScrub();
         if(!getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)){Ui.toast(this,"设备不支持系统画中画");return;}
-        gestures.cancelGesture();transform.resetFit();checkpoint();mediaInfo.setVisibility(View.GONE);handler.removeCallbacks(hideControls);top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);hud.setVisibility(View.GONE);errorBox.setVisibility(View.GONE);buffering.setVisibility(View.GONE);
+        gestures.cancelGesture();transform.resetFit();checkpoint();mediaInfo.setVisibility(View.GONE);handler.removeCallbacks(hideControls);top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);timeline.setVisibility(View.GONE);hud.setVisibility(View.GONE);errorBox.setVisibility(View.GONE);buffering.setVisibility(View.GONE);
         try{pipTransition=true;if(!enterPictureInPictureMode(pipParams())){pipTransition=false;showControls();Ui.toast(this,"请在系统设置中允许本应用使用画中画");}}
         catch(IllegalStateException|IllegalArgumentException e){pipTransition=false;showControls();Ui.toast(this,"无法进入画中画，请检查系统权限");}
     }
     @Override public void onPictureInPictureModeChanged(boolean pip,Configuration config){
         super.onPictureInPictureModeChanged(pip,config);pipTransition=false;gestures.cancelGesture();transform.resetFit();gestures.setVisibility(pip?View.GONE:View.VISIBLE);
-        if(pip){top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);hud.setVisibility(View.GONE);errorBox.setVisibility(View.GONE);buffering.setVisibility(View.GONE);}
+        if(pip){top.setVisibility(View.GONE);bottom.setVisibility(View.GONE);timeline.setVisibility(View.GONE);hud.setVisibility(View.GONE);errorBox.setVisibility(View.GONE);buffering.setVisibility(View.GONE);}
         else{if(!visible && player!=null)player.pause();immersive();showControls();if(player!=null && player.getPlayerError()!=null)showError("播放中断，请重试。");}
     }
     @SuppressWarnings("deprecation") private void immersive(){
@@ -449,7 +466,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(deleting)return true;
         if(gestureLocked && !hit(lockButton,event))return true;
         if(event.getActionMasked()==MotionEvent.ACTION_DOWN && gestures!=null
-                && (hit(top,event)||hit(bottom,event)||hit(errorBox,event)||hit(mediaInfo,event)))gestures.cancelGesture();
+                && (hit(top,event)||hit(bottom,event)||hit(timeline,event)||hit(errorBox,event)||hit(mediaInfo,event)))gestures.cancelGesture();
         return super.dispatchTouchEvent(event);
     }
     private boolean hit(View view,MotionEvent event){

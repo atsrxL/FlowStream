@@ -21,6 +21,15 @@ public final class SpeedScale {
     }
     public static float normalize(float speed) { return at(nearest(speed)); }
     public static String label(float value) { return String.format(Locale.ROOT, "%.2f×", value); }
+    /** Hold sensitivity is local to its starting point, independently of screen width. */
+    public static float forwardHold(float dxDp, float rangeDp) {
+        float t = progress(Math.abs(dxDp), Math.max(.01f, rangeDp), 4f);
+        return Math.round((dxDp < 0 ? 2f - 1.9f * t : 2f + 3f * t) * 20f) / 20f;
+    }
+    public static float reverseHold(float dxDp, float rangeDp) {
+        float t = progress(Math.abs(dxDp), Math.max(.01f, rangeDp), 4f);
+        return Math.round((dxDp < 0 ? 1f + 3f * t : 1f - .9f * t) * 20f) / 20f;
+    }
     /** Bottom hold: 12dp jitter dead zone; -120dp -> 1x; +180dp -> 5x. */
     public static float bottom(float dxDp) {
         if (Math.abs(dxDp) <= 12f) return 2f;

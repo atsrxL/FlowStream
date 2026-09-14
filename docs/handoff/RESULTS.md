@@ -59,3 +59,5 @@ APK：dist/FlowStream-0.3.0-debug.apk。包名dev.flowstream.player.debug，已�
 最新修复见RESULTS-0.4.1.md。
 
 最新0.5.0见RESULTS-0.5.0.md，当前手势以docs/GESTURES.md为准。
+
+当前0.7.0交付及USB设备记录见[RESULTS-0.7.0.md](RESULTS-0.7.0.md)。

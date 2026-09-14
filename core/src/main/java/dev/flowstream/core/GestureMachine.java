@@ -2,10 +2,13 @@ package dev.flowstream.core;
 
 /** Platform-free, one-finger gesture arbitration. Coordinates are dp, time is monotonic ms. */
 public final class GestureMachine {
-    public enum Mode { IDLE, PENDING, VERTICAL, PAN, HOLD_MIDDLE, HOLD_BOTTOM, REJECTED }
+    public enum Mode { IDLE, PENDING, VERTICAL, PAN, SCRUB, HOLD_TOP, HOLD_BOTTOM, REJECTED }
     public interface Output {
         void tap();
         default void pan(float dxDp, float dyDp) {}
+        default void scrubStarted() {}
+        default void scrubMoved(float totalDxDp, float widthDp) {}
+        default void scrubEnded(boolean commit) {}
         void switchVideo(int delta); // +1 next, -1 previous
         void holdStarted();
         void forward(float speed);
@@ -20,11 +23,16 @@ public final class GestureMachine {
     private Mode mode = Mode.IDLE;
     private float x0, y0, x, y, width, height, slop, maxTravel;
     private int zone;
+    private float holdRangeDp = 160f / 2.54f;
     private long downAt, lastSwitch = Long.MIN_VALUE / 2;
     private boolean holdActive, inspectMode;
 
     public GestureMachine(Output out) { this.out = out; }
     public Mode mode() { return mode; }
+    /** Physical one-centimetre horizontal distance converted by the Android display metrics. */
+    public void setHoldRangeDp(float rangeDp) {
+        if (Float.isFinite(rangeDp) && rangeDp > 0) holdRangeDp = rangeDp;
+    }
     public void down(float x, float y, float width, float height, float platformSlop, long now) {
         down(x,y,width,height,platformSlop,now,false);
     }
@@ -42,11 +50,11 @@ public final class GestureMachine {
     }
     public void holdTimeout(long now) {
         if (mode != Mode.PENDING || now - downAt < HOLD_MS || maxTravel > slop) return;
-        if (zone == 0) { mode = Mode.REJECTED; return; }
-        mode = zone == 1 ? Mode.HOLD_MIDDLE : Mode.HOLD_BOTTOM;
+        if (zone == 1) return;
+        mode = zone == 0 ? Mode.HOLD_TOP : Mode.HOLD_BOTTOM;
         holdActive = true;
         out.holdStarted();
-        out.forward(zone == 1 ? 1f : 2f);
+        if (zone == 0) out.reverse(1f); else out.forward(2f);
     }
     public void move(float nx, float ny, long now) {
         float previousX = x, previousY = y;
@@ -54,19 +62,20 @@ public final class GestureMachine {
         float dx = x - x0, dy = y - y0;
         maxTravel = Math.max(maxTravel, (float) Math.hypot(dx, dy));
         if (mode == Mode.PAN) { out.pan(x - previousX, y - previousY); return; }
-        if (mode == Mode.HOLD_MIDDLE) {
-            float r = SpeedScale.reverseAt(x0,x);
-            if (r == 0) out.forward(1f); else out.reverse(r);
-            return;
-        }
-        if (mode == Mode.HOLD_BOTTOM) { out.forward(SpeedScale.bottomAt(x0,x,width)); return; }
+        if (mode == Mode.SCRUB) { out.scrubMoved(dx, width); return; }
+        if (mode == Mode.HOLD_TOP) { out.reverse(SpeedScale.reverseHold(dx, holdRangeDp)); return; }
+        if (mode == Mode.HOLD_BOTTOM) { out.forward(SpeedScale.forwardHold(dx, holdRangeDp)); return; }
         if (mode == Mode.PENDING) {
             if (maxTravel > slop) {
                 if (inspectMode) { mode = Mode.PAN; out.pan(dx, dy); return; }
                 if (Math.abs(dy) >= slop && Math.abs(dy) >= AXIS_RATIO * Math.abs(dx)) {
                     mode = Mode.VERTICAL;
                 } else if (Math.abs(dx) >= slop && Math.abs(dx) >= AXIS_RATIO * Math.abs(dy)) {
-                    mode = Mode.REJECTED; // horizontal slide without an established hold does nothing
+                    if (zone == 1) {
+                        mode = Mode.SCRUB;
+                        out.scrubStarted();
+                        out.scrubMoved(dx, width);
+                    } else mode = Mode.REJECTED;
                 } else if (maxTravel > slop * 2.5f) {
                     mode = Mode.REJECTED; // ambiguous diagonal drag is never converted later
                 }
@@ -75,9 +84,10 @@ public final class GestureMachine {
         if (mode == Mode.VERTICAL) out.swipePreview(dy, Math.abs(dy) >= distanceThreshold());
     }
     public void up(float nx, float ny, float velocityYDpSec, long now) {
-        if (mode == Mode.PENDING || mode == Mode.PAN) move(nx, ny, now);
+        if (mode == Mode.PENDING || mode == Mode.PAN || mode == Mode.SCRUB) move(nx, ny, now);
         float dx = nx - x0, dy = ny - y0;
-        if (holdActive) endHold();
+        if (mode == Mode.SCRUB) out.scrubEnded(true);
+        else if (holdActive) endHold();
         else if (mode == Mode.VERTICAL) {
             boolean axis = Math.abs(dy) >= AXIS_RATIO * Math.abs(dx);
             boolean far = Math.abs(dy) >= distanceThreshold();
@@ -96,6 +106,7 @@ public final class GestureMachine {
     public float distanceThreshold() { return Math.max(96f, height * .14f); }
     /** Also used for a second pointer, ACTION_CANCEL, lost focus, PiP and rotation. */
     public void cancel() {
+        if (mode == Mode.SCRUB) out.scrubEnded(false);
         endHold();
         if (mode != Mode.IDLE) out.swipePreview(0, false);
         mode = Mode.IDLE;

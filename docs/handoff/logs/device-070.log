@@ -1,0 +1,44 @@
+FAIL java.lang.AssertionError: Playback error
+	at dev.flowstream.player.GestureChecks.ready(GestureChecks.java:27)
+	at dev.flowstream.player.GestureChecks.onStart(GestureChecks.java:44)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2509)
+Caused by: androidx.media3.exoplayer.ExoPlaybackException: MediaCodecAudioRenderer error, index=1, format=Format(2, null, video/mp4, audio/mp4a-latm, mp4a.40.2, 69350, und, [-1, -1, -1.0, null], [1, 48000]), format_supported=YES
+	at androidx.media3.exoplayer.BaseRenderer.createRendererException(BaseRenderer.java:558)
+	at androidx.media3.exoplayer.audio.MediaCodecAudioRenderer.processOutputBuffer(MediaCodecAudioRenderer.java:869)
+	at androidx.media3.exoplayer.mediacodec.MediaCodecRenderer.drainOutputBuffer(MediaCodecRenderer.java:2264)
+	at androidx.media3.exoplayer.mediacodec.MediaCodecRenderer.render(MediaCodecRenderer.java:950)
+	at androidx.media3.exoplayer.RendererHolder.render(RendererHolder.java:392)
+	at androidx.media3.exoplayer.ExoPlayerImplInternal.doSomeWork(ExoPlayerImplInternal.java:1388)
+	at androidx.media3.exoplayer.ExoPlayerImplInternal.handleMessage(ExoPlayerImplInternal.java:711)
+	at android.os.Handler.dispatchMessage(Handler.java:102)
+	at android.os.Looper.loopOnce(Looper.java:235)
+	at android.os.Looper.loop(Looper.java:350)
+	at android.os.HandlerThread.run(HandlerThread.java:67)
+Caused by: androidx.media3.exoplayer.audio.AudioSink$InitializationException: AudioTrack init failed 0 Config(48000, 4, 2, 24000) Format(2, null, null, audio/raw, null, -1, und, [-1, -1, -1.0, null], [1, 48000])
+	at androidx.media3.exoplayer.audio.DefaultAudioSink.buildAudioOutput(DefaultAudioSink.java:1082)
+	at androidx.media3.exoplayer.audio.DefaultAudioSink.buildAudioOutputWithRetry(DefaultAudioSink.java:1048)
+	at androidx.media3.exoplayer.audio.DefaultAudioSink.initializeAudioOutput(DefaultAudioSink.java:826)
+	at androidx.media3.exoplayer.audio.DefaultAudioSink.handleBuffer(DefaultAudioSink.java:929)
+	at androidx.media3.exoplayer.audio.MediaCodecAudioRenderer.processOutputBuffer(MediaCodecAudioRenderer.java:867)
+	... 9 more
+	Suppressed: androidx.media3.exoplayer.audio.AudioSink$InitializationException: AudioTrack init failed 0 Config(48000, 4, 2, 24000) Format(2, null, null, audio/raw, null, -1, und, [-1, -1, -1.0, null], [1, 48000])
+		... 14 more
+	Caused by: androidx.media3.exoplayer.audio.AudioOutputProvider$InitializationException: java.lang.UnsupportedOperationException: Cannot create AudioTrack
+		at androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider.getAudioOutput(AudioTrackAudioOutputProvider.java:356)
+		at androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider.getAudioOutput(AudioTrackAudioOutputProvider.java:62)
+		at androidx.media3.exoplayer.audio.DefaultAudioSink.buildAudioOutput(DefaultAudioSink.java:1073)
+		... 13 more
+	Caused by: java.lang.UnsupportedOperationException: Cannot create AudioTrack
+		at android.media.AudioTrack$Builder.build(AudioTrack.java:1395)
+		at androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider.getAudioOutput(AudioTrackAudioOutputProvider.java:353)
+		... 15 more
+Caused by: androidx.media3.exoplayer.audio.AudioOutputProvider$InitializationException: java.lang.UnsupportedOperationException: Cannot create AudioTrack
+	at androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider.getAudioOutput(AudioTrackAudioOutputProvider.java:356)
+	at androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider.getAudioOutput(AudioTrackAudioOutputProvider.java:62)
+	at androidx.media3.exoplayer.audio.DefaultAudioSink.buildAudioOutput(DefaultAudioSink.java:1073)
+	... 13 more
+Caused by: java.lang.UnsupportedOperationException: Cannot create AudioTrack
+	at android.media.AudioTrack$Builder.build(AudioTrack.java:1395)
+	at androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider.getAudioOutput(AudioTrackAudioOutputProvider.java:353)
+	... 15 more
+

@@ -1,0 +1,9 @@
+PASS top has only rotate pip speed
+PASS timeline persists when menu hidden
+PASS top has only rotate pip speed
+PASS timeline persists when menu hidden
+FAIL java.lang.AssertionError: scrub begun mode=IDLE timeline=729-854
+	at dev.flowstream.player.GestureChecks.check(GestureChecks.java:26)
+	at dev.flowstream.player.GestureChecks.onStart(GestureChecks.java:49)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2509)
+

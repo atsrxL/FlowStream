@@ -13,8 +13,11 @@ public final class CoreTests {
     private static void near(float a,float b){ok(Math.abs(a-b)<.0001f);}
     private static void throwsError(Checked f) throws Exception {try{f.run();}catch(Exception expected){return;}throw new AssertionError("Exception expected");}
     static final class Output implements GestureMachine.Output {
-        int taps,switches,delta,starts,ends;float forward,reverse;boolean active,everHeld;
+        int taps,switches,delta,starts,ends,scrubStarts,scrubEnds,scrubCommits;float scrubDx,scrubWidth;boolean scrubbing;float forward,reverse;boolean active,everHeld;
         public void tap(){taps++;}
+        public void scrubStarted(){scrubStarts++;ok(!scrubbing&&!active);scrubbing=true;}
+        public void scrubMoved(float dx,float width){ok(scrubbing);scrubDx=dx;scrubWidth=width;}
+        public void scrubEnded(boolean commit){ok(scrubbing);scrubbing=false;scrubEnds++;if(commit)scrubCommits++;}
         public void switchVideo(int d){switches++;delta=d;ok(!active);}
         public void holdStarted(){starts++;ok(!active);active=true;everHeld=true;}
         public void forward(float s){forward=s;ok(active);}
@@ -47,13 +50,13 @@ public final class CoreTests {
         test("swipe: 40dp fast flick rejected",()->{G g=new G();g.down(210,450,0);g.m.move(210,410,30);g.m.up(210,410,-5000,40);eq(g.out.switches,0);});
         test("swipe: opposite fling velocity not accepted",()->{G g=new G();g.down(210,450,0);g.m.move(210,380,70);g.m.up(210,380,1400,80);eq(g.out.switches,0);});
         test("swipe: long diagonal rejected",()->{G g=new G();g.down(210,450,0);g.m.move(260,400,50);g.up(340,250,120);eq(g.out.switches,0);});
-        test("swipe: axis cannot be stolen after horizontal rejection",()->{G g=new G();g.down(210,450,0);g.m.move(240,450,50);g.m.move(210,220,100);g.up(210,220,120);eq(g.out.switches,0);eq(g.out.starts,0);});
+        test("swipe: axis cannot be stolen after scrub starts",()->{G g=new G();g.down(210,450,0);g.m.move(240,450,50);g.m.move(210,220,100);g.up(210,220,120);eq(g.out.switches,0);eq(g.out.starts,0);});
         test("swipe: return to origin cancels distance commit",()->{G g=new G();g.down(210,450,0);g.m.move(210,200,80);g.m.move(210,447,150);g.up(210,447,200);eq(g.out.switches,0);eq(g.out.taps,0);});
         test("swipe: 450ms cooldown between commits",()->{G g=new G();g.down(210,450,0);g.m.move(210,250,100);g.up(210,250,150);g.down(210,450,200);g.m.move(210,250,250);g.up(210,250,300);eq(g.out.switches,1);g.down(210,450,650);g.m.move(210,250,700);g.up(210,250,750);eq(g.out.switches,2);});
-        test("hold: top third has no hold action",()->{G g=new G();g.down(210,150,0);g.m.holdTimeout(380);g.up(210,150,600);eq(g.out.starts,0);eq(g.out.taps,0);});
-        test("hold: middle starts normal playback",()->{G g=new G();g.down(210,450,0);g.m.holdTimeout(379);eq(g.out.starts,0);g.m.holdTimeout(380);near(g.out.forward,1f);g.up(210,450,500);eq(g.out.ends,1);});
-        test("hold: bottom starts 2x then left/right adjust",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(380);near(g.out.forward,2f);g.m.move(90,750,420);ok(g.out.forward<2&&g.out.forward>.1f);g.m.move(420,750,450);near(g.out.forward,5f);g.up(390,750,500);eq(g.out.ends,1);});
-        test("hold: middle left reverse and return to 1x",()->{G g=new G();g.down(300,450,0);g.m.holdTimeout(400);g.m.move(276,450,450);near(g.out.reverse,.1f);g.m.move(0,450,500);near(g.out.reverse,4f);g.m.move(300,450,550);near(g.out.forward,1f);g.up(300,450,600);eq(g.out.ends,1);});
+        test("hold: top third starts reverse at 1x",()->{G g=new G();g.down(210,150,0);g.m.holdTimeout(380);near(g.out.reverse,1);g.up(210,150,600);eq(g.out.starts,1);eq(g.out.ends,1);eq(g.out.taps,0);});
+        test("hold: middle remains pending without transport",()->{G g=new G();g.down(210,450,0);g.m.holdTimeout(379);eq(g.out.starts,0);g.m.holdTimeout(380);eq(g.out.starts,0);eq(g.m.mode(),GestureMachine.Mode.PENDING);g.up(210,450,500);eq(g.out.ends,0);eq(g.out.taps,0);});
+        test("hold: bottom starts 2x then left/right adjust",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(380);near(g.out.forward,2f);g.m.move(180,750,420);ok(g.out.forward<2&&g.out.forward>.1f);g.m.move(420,750,450);near(g.out.forward,5f);g.up(390,750,500);eq(g.out.ends,1);});
+        test("hold: top reverse varies both sides and returns to 1x",()->{G g=new G();g.m.setHoldRangeDp(60);g.down(300,150,0);g.m.holdTimeout(400);near(g.out.reverse,1);g.m.move(240,150,450);near(g.out.reverse,4);g.m.move(360,150,500);near(g.out.reverse,.1f);g.m.move(300,150,550);near(g.out.reverse,1);g.up(300,150,600);eq(g.out.ends,1);});
         test("hold: vertical drift after activation never changes video",()->{G g=new G();g.down(210,750,0);g.m.holdTimeout(400);g.m.move(210,100,500);g.m.up(210,100,-4000,600);eq(g.out.switches,0);eq(g.out.ends,1);});
         test("hold: cannot activate after vertical axis is locked",()->{G g=new G();g.down(210,450,0);g.m.move(210,430,70);g.m.holdTimeout(450);g.up(210,430,600);eq(g.out.starts,0);});
         test("hold: subthreshold diagonal movement still cancels long press eligibility",()->{G g=new G();g.down(210,450,0);g.m.move(222,462,70);g.m.holdTimeout(450);g.up(222,462,600);eq(g.out.starts,0);});
@@ -96,10 +99,15 @@ public final class CoreTests {
                 G g=new G();long t=0;float x=30+r.nextFloat()*360,y=40+r.nextFloat()*800;g.down(x,y,t);
                 for(int j=0;j<12;j++){t+=r.nextInt(100);x+=(r.nextFloat()-.5f)*65;y+=(r.nextFloat()-.5f)*80;if(r.nextInt(10)==0)g.m.holdTimeout(t);g.m.move(x,y,t);if(r.nextInt(80)==0)g.m.cancel();}
                 g.m.up(x,y,(r.nextFloat()-.5f)*4000,t+30);g.m.cancel();
-                ok(g.out.switches<=1);ok(g.out.taps<=1);ok(!(g.out.taps>0 && g.out.switches>0));eq(g.out.starts,g.out.ends);ok(!g.out.active);if(g.out.everHeld)eq(g.out.switches,0);
+                ok(g.out.switches<=1);ok(g.out.taps<=1);ok(!(g.out.taps>0 && g.out.switches>0));eq(g.out.starts,g.out.ends);eq(g.out.scrubStarts,g.out.scrubEnds);ok(!g.out.scrubbing);ok(!(g.out.scrubStarts>0 && (g.out.starts>0 || g.out.switches>0 || g.out.taps>0)));ok(!g.out.active);if(g.out.everHeld)eq(g.out.switches,0);
             }
         });
-        test("hold: edges reach endpoints from every start",()->{for(int start=24;start<=396;start+=3){near(SpeedScale.bottomAt(start,0,420),.1f);near(SpeedScale.bottomAt(start,420,420),5f);near(SpeedScale.bottomAt(start,start,420),2f);near(SpeedScale.reverseAt(start,0),4f);near(SpeedScale.reverseAt(start,start),0f);}});
+        test("hold: one-centimetre endpoints do not depend on origin",()->{float range=160f/2.54f;for(int start=70;start<=350;start+=3){for(int zone:new int[]{0,2}){G g=new G();float y=zone==0?150:750;g.down(start,y,0);g.m.holdTimeout(380);g.m.move(start-range,y,400);near(zone==0?g.out.reverse:g.out.forward,zone==0?4:.1f);g.m.move(start+range,y,420);near(zone==0?g.out.reverse:g.out.forward,zone==0?.1f:5);g.m.move(start,y,440);near(zone==0?g.out.reverse:g.out.forward,zone==0?1:2);g.m.cancel();}}});
+        test("hold: custom physical range changes sensitivity",()->{G g=new G();g.m.setHoldRangeDp(100);g.down(210,750,0);g.m.holdTimeout(380);g.m.move(270,750,400);ok(g.out.forward<5);g.m.move(310,750,420);near(g.out.forward,5);g.m.move(110,750,440);near(g.out.forward,.1f);g.m.cancel();});
+        test("scrub: middle drag begins immediately and commits final position",()->{G g=new G();g.down(210,450,0);g.m.move(225,451,50);eq(g.out.scrubStarts,1);near(g.out.scrubDx,15);near(g.out.scrubWidth,420);g.up(260,451,80);eq(g.out.scrubEnds,1);eq(g.out.scrubCommits,1);near(g.out.scrubDx,50);eq(g.out.taps,0);eq(g.out.starts,0);eq(g.out.switches,0);});
+        test("scrub: stationary wait does not prevent later progress drag",()->{G g=new G();g.down(210,450,0);g.m.holdTimeout(1000);g.m.move(180,450,1100);eq(g.out.scrubStarts,1);g.up(170,450,1200);eq(g.out.scrubCommits,1);eq(g.out.starts,0);});
+        test("scrub: cancellation restores once without committing",()->{G g=new G();g.down(210,450,0);g.m.move(180,450,50);g.m.cancel();g.m.cancel();g.up(170,450,200);eq(g.out.scrubEnds,1);eq(g.out.scrubCommits,0);eq(g.out.taps,0);});
+        test("swipe: all three start zones retain vertical navigation",()->{for(int y:new int[]{180,450,740}){G g=new G();g.down(210,y,0);g.m.move(210,y-150,100);g.up(210,y-150,150);eq(g.out.switches,1);eq(g.out.delta,1);eq(g.out.scrubStarts,0);eq(g.out.starts,0);}});
         test("multi-tap: delayed and distant singles keep their own coordinates",()->{
             java.util.List<String> points=new java.util.ArrayList<>();MultiTapResolver r=new MultiTapResolver(300,60,new MultiTapResolver.Output(){public void singleTap(){}public void singleTapAt(float x,float y){points.add(x+","+y);}public void doubleTap(){}public void tripleTap(){}});
             r.down(100,200,0);r.up(true,100,200,50);r.down(500,800,100);r.up(true,500,800,150);r.confirm(450);

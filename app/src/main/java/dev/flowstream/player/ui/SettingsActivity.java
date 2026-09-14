@@ -34,7 +34,7 @@ public final class SettingsActivity extends BackActivity {
         body.addView(Ui.text(this,"点击服务器选择；编辑与删除按钮在每条记录下方。",13,Ui.MUTED));servers=Ui.column(this);body.addView(servers);
         body.addView(Ui.button(this,"＋ 添加服务器",()->form(new Server())));
         TextView info=Ui.text(this,"目录浏览和播放仅用于读取；播放器菜单中的“删除”会在确认后删除服务器原文件。WebDAV 支持 Basic 认证或匿名访问，不支持 Digest / OAuth。",14,Ui.MUTED);info.setPadding(0,Ui.dp(this,18),0,Ui.dp(this,18));body.addView(info);
-        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存，已关闭应用备份。无广告、无统计 SDK。\nFlowStream 0.6.3",13,Ui.MUTED));
+        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存，已关闭应用备份。无广告、无统计 SDK。\nFlowStream 0.7.0",13,Ui.MUTED));
         setContentView(root);Ui.safeInsets(this,root);Ui.systemBars(this);refresh();
     }
     private void refresh(){final int token=++generation;app.disk.execute(()->{

@@ -46,6 +46,9 @@ public final class GestureOverlay extends View {
         machine = new GestureMachine(new GestureMachine.Output() {
             @Override public void tap() { tapEligible = true; } // Only a candidate, never immediate pause.
             @Override public void pan(float dx, float dy) { output.panPixels(dx * density, dy * density); }
+            @Override public void scrubStarted(){cancelTaps();output.scrubStarted();}
+            @Override public void scrubMoved(float dx,float width){output.scrubMoved(dx,width);}
+            @Override public void scrubEnded(boolean commit){output.scrubEnded(commit);}
             @Override public void switchVideo(int delta) { output.switchVideo(delta); }
             @Override public void holdStarted() { cancelTaps(); output.holdStarted(); }
             @Override public void forward(float speed) { output.forward(speed); }
@@ -53,6 +56,8 @@ public final class GestureOverlay extends View {
             @Override public void holdEnded() { output.holdEnded(); }
             @Override public void swipePreview(float dy, boolean ready) { output.swipePreview(dy, ready); }
         });
+        float physicalDpi=c.getResources().getDisplayMetrics().xdpi;
+        machine.setHoldRangeDp((Float.isFinite(physicalDpi)&&physicalDpi>0?physicalDpi:160*density)/density/2.54f);
         longPress = () -> { if (active && !blocked && !multi) machine.holdTimeout(SystemClock.uptimeMillis()); };
         confirmTap = () -> taps.confirm(SystemClock.uptimeMillis());
         scaleDetector = new ScaleGestureDetector(c, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -73,7 +78,7 @@ public final class GestureOverlay extends View {
         scaleDetector.setQuickScaleEnabled(false);
         scaleDetector.setStylusScaleEnabled(false);
         setClickable(true); setFocusable(true);
-        setContentDescription("视频手势区域。图像内单击播放或暂停，黑边单击显示或隐藏菜单；双击切换宽度适屏、高度适屏、原始大小；双指缩放后拖动画面且不切片；三种预设模式上下滑切片；中下区长按回看或变速。");
+        setContentDescription("视频手势区域。图像内单击播放或暂停，黑边单击显示或隐藏菜单；双击切换宽度适屏、高度适屏、原始大小；双指缩放后拖动画面且不切片；三种预设模式上下滑切片；上区长按倒放，中区左右拖动进度，下区长按快进；触发点左右一厘米到达速度端点。");
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {

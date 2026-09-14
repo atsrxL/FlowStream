@@ -1,0 +1,59 @@
+PASS top has only rotate pip speed
+PASS timeline persists when menu hidden
+PASS scrub begun mode=SCRUB timeline=729-854
+PASS middle horizontal drag advances progress before=10000 after=13598 size=480x854 mode=WIDTH
+PASS scrub keeps pause and never changes video
+PASS cancelled middle drag keeps position
+PASS top starts reverse 1x
+PASS one cm left reaches reverse 4x
+PASS one cm right reaches reverse 0.1x
+PASS speed hint at top second row
+PASS timeline remains visible during reverse
+PASS reverse release restores pause
+PASS one cm right reaches forward 5x
+PASS one cm left reaches forward 0.1x
+PASS forward release restores base speed and pause
+PASS top starts reverse 1x
+PASS one cm left reaches reverse 4x
+PASS one cm right reaches reverse 0.1x
+PASS speed hint at top second row
+PASS timeline remains visible during reverse
+PASS reverse release restores pause
+PASS one cm right reaches forward 5x
+PASS one cm left reaches forward 0.1x
+PASS forward release restores base speed and pause
+PASS middle long hold never starts transport
+PASS middle can scrub after waiting
+PASS double still cycles size
+PASS middle vertical swipe still switches video
+PASS timeline stays visible after video switch
+PASS top has only rotate pip speed
+PASS timeline persists when menu hidden
+PASS scrub begun mode=SCRUB timeline=729-854
+PASS middle horizontal drag advances progress before=10000 after=13598 size=480x854 mode=WIDTH
+PASS scrub keeps pause and never changes video
+PASS cancelled middle drag keeps position
+PASS top starts reverse 1x
+PASS one cm left reaches reverse 4x
+PASS one cm right reaches reverse 0.1x
+PASS speed hint at top second row
+PASS timeline remains visible during reverse
+PASS reverse release restores pause
+PASS one cm right reaches forward 5x
+PASS one cm left reaches forward 0.1x
+PASS forward release restores base speed and pause
+PASS top starts reverse 1x
+PASS one cm left reaches reverse 4x
+PASS one cm right reaches reverse 0.1x
+PASS speed hint at top second row
+PASS timeline remains visible during reverse
+PASS reverse release restores pause
+PASS one cm right reaches forward 5x
+PASS one cm left reaches forward 0.1x
+PASS forward release restores base speed and pause
+PASS middle long hold never starts transport
+PASS middle can scrub after waiting
+PASS double still cycles size
+PASS middle vertical swipe still switches video
+PASS timeline stays visible after video switch
+

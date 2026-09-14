@@ -1,3 +1,9 @@
+# FlowStream 0.7.0 · USB调试与三区手势
+
+当前调试设备：USB `320237117371`，F50，Android 13。使用显式adb -s参数，不再使用之前的网络设备。
+
+[APK](dist/FlowStream-0.7.0-debug.apk) · [完整交互](docs/GESTURES.md) · [当前验收](docs/handoff/RESULTS-0.7.0.md)。
+
 # FlowStream 0.6.3 · 双击立即切换适屏模式
 
 [APK](dist/FlowStream-0.6.3-debug.apk) · [完整交互](docs/GESTURES.md) · [验收](docs/handoff/RESULTS-0.6.3.md)。
