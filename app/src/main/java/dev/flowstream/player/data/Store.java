@@ -21,6 +21,25 @@ public final class Store extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX session_updated ON sessions(updated DESC)");
     }
     @Override public void onUpgrade(SQLiteDatabase db, int oldV, int newV) { throw new IllegalStateException("数据库迁移尚未定义"); }
+    public synchronized List<MarkedItem> markedItems(){
+        List<MarkedItem> result=new ArrayList<>();
+        try{JSONArray rows=new JSONArray(prefs.getString("marked_media","[]"));
+            for(int i=0;i<rows.length();i++){try{JSONObject row=rows.getJSONObject(i);result.add(new MarkedItem(row.getString("server"),new RemoteItem(row.getString("path"),row.optString("name"),false,row.optLong("size")),row.optLong("time")));}catch(JSONException|IllegalArgumentException ignored){}}
+        }catch(JSONException ignored){}
+        return result;
+    }
+    public synchronized boolean isMarked(String serverId,String path){for(MarkedItem mark:markedItems())if(mark.serverId.equals(serverId)&&mark.item.path.equals(MediaPaths.normalize(path)))return true;return false;}
+    public synchronized boolean toggleMarked(String serverId,RemoteItem item){
+        if(item.directory)throw new IllegalArgumentException("只能标记视频");
+        List<MarkedItem> marks=markedItems();boolean removed=marks.removeIf(mark->mark.serverId.equals(serverId)&&mark.item.path.equals(item.path));
+        if(!removed)marks.add(0,new MarkedItem(serverId,item,System.currentTimeMillis()));
+        saveMarkedItems(marks);return !removed;
+    }
+    public synchronized void removeMarked(String serverId,String path){List<MarkedItem> marks=markedItems();marks.removeIf(mark->mark.serverId.equals(serverId)&&mark.item.path.equals(MediaPaths.normalize(path)));saveMarkedItems(marks);}
+    private void saveMarkedItems(List<MarkedItem> marks){
+        JSONArray rows=new JSONArray();for(MarkedItem mark:marks){JSONObject row=new JSONObject();try{row.put("server",mark.serverId).put("path",mark.item.path).put("name",mark.item.name).put("size",mark.item.size).put("time",mark.markedAt);}catch(JSONException impossible){throw new IllegalStateException(impossible);}rows.put(row);}
+        prefs.edit().putString("marked_media",rows.toString()).apply();
+    }
     public boolean thumbnailMode(){return prefs.getBoolean("thumbnail_mode",false);}
     public void setThumbnailMode(boolean enabled){prefs.edit().putBoolean("thumbnail_mode",enabled).apply();}
     public boolean randomMode(){return prefs.getBoolean("random_mode",false);}
@@ -84,7 +103,8 @@ public final class Store extends SQLiteOpenHelper {
             throw new IOException("保存服务器失败，请检查本机可用存储空间");
         if (activeServer().isEmpty()) selectServer(s.id);
     }
-    public void deleteServer(String id) {
+    public synchronized void deleteServer(String id) {
+        List<MarkedItem> marks=markedItems();marks.removeIf(mark->mark.serverId.equals(id));saveMarkedItems(marks);
         getWritableDatabase().delete("servers", "id=?", new String[]{id});
         prefs.edit().remove("folder." + id).apply();
         if (activeServer().equals(id)) selectServer("");

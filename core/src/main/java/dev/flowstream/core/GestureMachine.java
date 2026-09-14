@@ -24,7 +24,7 @@ public final class GestureMachine {
     private float x0, y0, x, y, width, height, slop, maxTravel;
     private int zone;
     private final String[] zoneHold = {"reverse", "none", "forward"};
-    private final String[] zoneDrag = {"none", "scrub", "none"};
+    private final String[] zoneDrag = {"none", "scrub", "scrub"};
     private float holdRangeDp = 160f / 2.54f;
     private float topEdgeDp=12f,bottomEdgeDp=32f;
     private long downAt, lastSwitch = Long.MIN_VALUE / 2;

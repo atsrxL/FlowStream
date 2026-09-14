@@ -30,25 +30,26 @@ public final class TrickPlayController {
     public void forward(float speed){
         if(!held)return;
         stopReverse();applySpeed(speed);player.play();
-        hint.accept((speed<.1f?"静音慢放 ":"临时播放 ")+SpeedScale.label(speed));
+        hint.accept("快进 "+rateLabel(speed));
     }
     public void reverse(float magnitude){
         if(!held)return;
-        if(!player.isCurrentMediaItemSeekable()){hint.accept("这个来源不支持回看 / 定位");return;}
+        if(!player.isCurrentMediaItemSeekable()){hint.accept("无法快退");return;}
         if(!reversing){
             reversing=true;player.pause();player.setVolume(0);player.setSeekParameters(SeekParameters.EXACT);
             clock.start(player.getCurrentPosition(),SystemClock.uptimeMillis(),magnitude);lastSeek=-1;handler.post(tick);
         }else clock.setMagnitude(magnitude);
-        hint.accept("反向回看 −"+SpeedScale.label(magnitude)+"\n近似定位 · 静音");
+        hint.accept("快退 "+rateLabel(magnitude));
     }
     private final Runnable tick=new Runnable(){@Override public void run(){
         if(!reversing)return;
         long target=clock.target(SystemClock.uptimeMillis());
         // Never pile seek requests on top of a network/decode operation already buffering.
         if(player.getPlaybackState()==androidx.media3.common.Player.STATE_READY && target!=lastSeek){lastSeek=target;player.seekTo(target);}
-        if(target==0)hint.accept("已到视频开头\n松手恢复之前的播放状态");
+        if(target==0)hint.accept("已到开头");
         handler.postDelayed(this,150);
     }};
+    private static String rateLabel(float speed){return java.math.BigDecimal.valueOf(Math.round(speed*100f),2).stripTrailingZeros().toPlainString()+"×";}
     public void endHold(){
         if(!held)return;held=false;stopReverse();applySpeed(baseSpeed);player.setVolume(restoreVolume);
         player.setPlayWhenReady(restorePlaying);hint.accept("");

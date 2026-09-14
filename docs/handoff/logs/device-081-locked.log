@@ -1,0 +1,9 @@
+PASS preview range cache and stream reuse
+PASS fixture contains videos
+PASS preview range cache and stream reuse
+PASS fixture contains videos
+FAIL java.lang.AssertionError: READY timeout
+	at dev.flowstream.player.PreviewChecks.ready(PreviewChecks.java:27)
+	at dev.flowstream.player.PreviewChecks.onStart(PreviewChecks.java:95)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2602)
+

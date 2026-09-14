@@ -1,3 +1,11 @@
+# FlowStream 0.8.1 · 预览优化与标记
+
+按更新的《映流.ods》增加标记入口、标记列表及下区横拖进度。预览复用独立连接与分块缓存；状态简化为“快进／快退”。
+
+[APK](dist/FlowStream-0.8.1-debug.apk) · [交互说明](docs/GESTURES.md) · [验证记录](docs/handoff/RESULTS-0.8.1.md)。当前设备：motorola edge 70 Android 16，ADB 192.168.123.52:5555。
+
+以下为历史版本记录。
+
 # FlowStream 0.8.0 · 映流 ODS 布局
 
 当前界面与手势以 [交互说明](docs/GESTURES.md) 为准。按用户《映流.ods》实现五列控制布局、可配置三区手势、全局速度、HUD超时及内存／磁盘预读。

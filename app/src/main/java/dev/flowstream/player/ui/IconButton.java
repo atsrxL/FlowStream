@@ -30,6 +30,7 @@ public final class IconButton extends Button {
             case "info":canvas.drawCircle(12,12,9,pen);line(canvas,12,11,12,18);line(canvas,9,18,15,18);canvas.drawCircle(12,7,.7f,pen);break;
             case "settings":canvas.drawCircle(12,12,6,pen);canvas.drawCircle(12,12,2,pen);for(int i=0;i<8;i++){double a=i*Math.PI/4;line(canvas,12+(float)Math.cos(a)*7,12+(float)Math.sin(a)*7,12+(float)Math.cos(a)*10,12+(float)Math.sin(a)*10);}break;
             case "random":line(canvas,3,6,7,6);line(canvas,7,6,17,18);line(canvas,17,18,21,18);line(canvas,3,18,7,18);line(canvas,7,18,17,6);line(canvas,17,6,21,6);line(canvas,18,3,21,6);line(canvas,18,9,21,6);line(canvas,18,15,21,18);line(canvas,18,21,21,18);break;
+            case "mark":Path flag=new Path();flag.moveTo(6,3);flag.lineTo(18,3);flag.lineTo(18,22);flag.lineTo(12,17);flag.lineTo(6,22);flag.close();canvas.drawPath(flag,pen);break;
             case "lock":rect(canvas,4,10,20,22);canvas.drawArc(7,1,17,15,180,180,false,pen);break;
             case "play":if(getText().toString().contains("Ⅱ")){line(canvas,8,4,8,20);line(canvas,16,4,16,20);}else{Path triangle=new Path();triangle.moveTo(6,3);triangle.lineTo(21,12);triangle.lineTo(6,21);triangle.close();pen.setStyle(Paint.Style.FILL);canvas.drawPath(triangle,pen);}break;
             default:canvas.drawCircle(12,12,9,pen);
