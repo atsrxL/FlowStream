@@ -1,3 +1,9 @@
+# FlowStream 0.8.0 · 映流 ODS 布局
+
+当前界面与手势以 [交互说明](docs/GESTURES.md) 为准。按用户《映流.ods》实现五列控制布局、可配置三区手势、全局速度、HUD超时及内存／磁盘预读。
+
+[APK](dist/FlowStream-0.8.0-debug.apk) · [本版验证](docs/handoff/RESULTS-0.8.0.md)。USB设备：F50 Android 13，`320237117371`。以下为历史版本记录。
+
 # FlowStream 0.7.0 · USB调试与三区手势
 
 当前调试设备：USB `320237117371`，F50，Android 13。使用显式adb -s参数，不再使用之前的网络设备。

@@ -1,0 +1,41 @@
+PASS settings retain HUD timeout and RAM mode
+PASS RAM prefix range EOF budget cancellation tests
+PASS three gesture zones ordered within actual bounds
+PASS middle double fit preserves pause
+PASS middle double native
+PASS middle double width
+PASS upper single has no action
+PASS blank above gesture zones has no tap action
+PASS lower double plays without fit
+PASS lower double pauses
+PASS lower single hides HUD keeps timeline
+PASS lower single shows HUD
+PASS control exists +3s
+PASS plus three seconds
+PASS control exists -3s
+PASS minus three seconds
+PASS media info opens
+PASS outside info tap dismisses without playback
+PASS lock blocks playback gestures keeps timeline
+PASS middle drag scrubs preserving pause
+PASS settings retain HUD timeout and RAM mode
+PASS RAM prefix range EOF budget cancellation tests
+PASS three gesture zones ordered within actual bounds
+PASS middle double fit preserves pause
+PASS middle double native
+PASS middle double width
+PASS upper single has no action
+PASS blank above gesture zones has no tap action
+PASS lower double plays without fit
+PASS lower double pauses
+PASS lower single hides HUD keeps timeline
+PASS lower single shows HUD
+PASS control exists +3s
+PASS plus three seconds
+PASS control exists -3s
+PASS minus three seconds
+PASS media info opens
+PASS outside info tap dismisses without playback
+PASS lock blocks playback gestures keeps timeline
+PASS middle drag scrubs preserving pause
+

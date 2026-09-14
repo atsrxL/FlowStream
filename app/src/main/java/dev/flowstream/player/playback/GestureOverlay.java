@@ -7,6 +7,8 @@ import android.os.SystemClock;
 import android.view.*;
 import dev.flowstream.core.GestureMachine;
 import dev.flowstream.core.TapResolver;
+import dev.flowstream.player.FlowApp;
+import dev.flowstream.player.data.Store;
 
 /** One owner per gesture: transport, inspection, or multi-touch. Controls sit above this view. */
 public final class GestureOverlay extends View {
@@ -23,19 +25,22 @@ public final class GestureOverlay extends View {
     private final TapResolver taps;
     private final ScaleGestureDetector scaleDetector;
     private final Output output;
+    private final Store store;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final float density;
     private final int touchSlop;
     private VelocityTracker tracker;
     private int pointer = -1;
     private boolean active, blocked, multi, tapEligible;
-    private float lastX, lastY, focusX, focusY;
+    private float lastX, lastY, focusX, focusY, tapX, tapY;
+    private float interactionTop, interactionBottom = Float.NaN, contactTop;
+    private int tapZone = -1;
     private final Runnable longPress;
     private final Runnable confirmTap;
 
     public GestureOverlay(Context c, Output out) {
         super(c);
-        output = out; density = c.getResources().getDisplayMetrics().density;
+        output = out; store = ((FlowApp)c.getApplicationContext()).store; density = c.getResources().getDisplayMetrics().density;
         ViewConfiguration config = ViewConfiguration.get(c);
         touchSlop = config.getScaledTouchSlop();
         taps = new TapResolver(ViewConfiguration.getDoubleTapTimeout(), config.getScaledDoubleTapSlop(), new TapResolver.Output() {
@@ -56,6 +61,7 @@ public final class GestureOverlay extends View {
             @Override public void holdEnded() { output.holdEnded(); }
             @Override public void swipePreview(float dy, boolean ready) { output.swipePreview(dy, ready); }
         });
+        machine.setVerticalEdgeInsets(0,0);
         float physicalDpi=c.getResources().getDisplayMetrics().xdpi;
         machine.setHoldRangeDp((Float.isFinite(physicalDpi)&&physicalDpi>0?physicalDpi:160*density)/density/2.54f);
         longPress = () -> { if (active && !blocked && !multi) machine.holdTimeout(SystemClock.uptimeMillis()); };
@@ -78,19 +84,44 @@ public final class GestureOverlay extends View {
         scaleDetector.setQuickScaleEnabled(false);
         scaleDetector.setStylusScaleEnabled(false);
         setClickable(true); setFocusable(true);
-        setContentDescription("视频手势区域。图像内单击播放或暂停，黑边单击显示或隐藏菜单；双击切换宽度适屏、高度适屏、原始大小；双指缩放后拖动画面且不切片；三种预设模式上下滑切片；上区长按倒放，中区左右拖动进度，下区长按快进；触发点左右一厘米到达速度端点。");
+        setContentDescription("视频手势区域。上中下三等分区域的单击、双击、长按和左右拖动可在设置中配置；双指缩放后拖动画面且不切片；预设模式上下滑动切片。");
+    }
+
+    /** Bounds are overlay-local pixels; OSD controls remain outside the interaction region. */
+    public void setInteractionBounds(float top, float bottom) {
+        if (!Float.isFinite(top) || !Float.isFinite(bottom)) return;
+        top = Math.max(0, top); bottom = Math.max(top, bottom);
+        if (interactionTop == top && interactionBottom == bottom) return;
+        cancelGesture(); interactionTop = top; interactionBottom = bottom;
+    }
+    private float regionBottom() { return Float.isNaN(interactionBottom) ? getHeight() : Math.min(getHeight(), interactionBottom); }
+    public int zoneAt(float y) {
+        float bottom = regionBottom();
+        if (!Float.isFinite(y) || y < interactionTop || y >= bottom || bottom <= interactionTop) return -1;
+        return Math.min(2, (int)(3f * (y - interactionTop) / (bottom - interactionTop)));
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {
         int action = e.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
+            int zone = zoneAt(e.getY());
+            if (zone < 0) { cancelGesture(); return false; }
+            // A first tap in another zone is an independent single, never a double.
+            if (tapZone >= 0 && tapZone != zone) {
+                long deadline = taps.deadline();
+                if (deadline >= 0) taps.confirm(deadline);
+                cancelTaps();
+            }
             // Keep the first tap's pending confirmation between normal contacts.
             if (active) cancelGesture();
             handler.removeCallbacks(longPress); handler.removeCallbacks(confirmTap);
             machine.cancel(); recycle();
             active = true; blocked = multi = tapEligible = false;
             pointer = e.getPointerId(0); lastX = e.getX(); lastY = e.getY();
-            machine.down(lastX/density,lastY/density,getWidth()/density,getHeight()/density,
+            tapZone = zone; contactTop = interactionTop;tapX=lastX;tapY=lastY;
+            machine.setZoneHoldAction(zone, store.gestureAction(zone,"hold"));
+            machine.setZoneDragAction(zone, store.gestureAction(zone,"drag"));
+            machine.down(lastX/density,(lastY-contactTop)/density,getWidth()/density,(regionBottom()-contactTop)/density,
                     touchSlop/density,e.getEventTime(),output.inspectAt(lastX,lastY));
             if (machine.mode() == GestureMachine.Mode.REJECTED) {
                 cancelGesture(); return false; // Leave OS navigation edges alone.
@@ -131,16 +162,16 @@ public final class GestureOverlay extends View {
         float x = e.getX(index), y = e.getY(index);
         if (tracker != null) tracker.addMovement(e);
         if (action == MotionEvent.ACTION_MOVE) {
-            machine.move(x/density,y/density,e.getEventTime());
+            machine.move(x/density,(y-contactTop)/density,e.getEventTime());
             if (machine.mode() != GestureMachine.Mode.PENDING) cancelTaps();
         } else if (action == MotionEvent.ACTION_UP) {
             float velocity = 0;
             if (tracker != null) { tracker.computeCurrentVelocity(1000); velocity = tracker.getYVelocity(pointer)/density; }
             handler.removeCallbacks(longPress); tapEligible = false;
-            machine.up(x/density,y/density,velocity,e.getEventTime());
+            machine.up(x/density,(y-contactTop)/density,velocity,e.getEventTime());
             // A switch callback may have synchronously cancelled this overlay.
             if (!active) return true;
-            taps.up(tapEligible,x,y,e.getEventTime());
+            taps.up(tapEligible,tapX,tapY,e.getEventTime());
             output.transformFinished();
             finishContact(); scheduleTap();
         }
@@ -152,7 +183,7 @@ public final class GestureOverlay extends View {
         long deadline = taps.deadline();
         if (deadline >= 0) handler.postAtTime(confirmTap, deadline);
     }
-    private void cancelTaps() { handler.removeCallbacks(confirmTap); taps.cancel(); }
+    private void cancelTaps() { handler.removeCallbacks(confirmTap); taps.cancel(); tapZone = -1; }
     private void finishContact() { active = false; multi = false; pointer = -1; recycle(); }
     /** Toolbar, focus loss, video switch, PiP and rotation also cancel deferred single taps. */
     public void cancelGesture() {

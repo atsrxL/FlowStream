@@ -6,6 +6,7 @@ import android.text.InputType;
 import android.view.*;
 import android.widget.*;
 import dev.flowstream.player.FlowApp;
+import dev.flowstream.core.GestureBindings;
 import dev.flowstream.player.data.Server;
 import dev.flowstream.player.net.Browsers;
 import java.util.*;
@@ -30,12 +31,32 @@ public final class SettingsActivity extends BackActivity {
             public void onStartTrackingTouch(SeekBar b){} public void onStopTrackingTouch(SeekBar b){}
         });
         body.addView(Ui.text(this,"当前视频就绪后预读下一条，临时缓存最多 50 MB；0 关闭。HLS / DASH 暂不预读。",12,Ui.MUTED));
+        Switch memory=new Switch(this);memory.setText("预读保存在内存");memory.setChecked(app.store.memoryPreload());memory.setOnCheckedChangeListener((v,checked)->app.store.setMemoryPreload(checked));body.addView(memory);
+        body.addView(Ui.text(this,"开启后，下条视频的预读使用内存；关闭后使用应用临时目录。",12,Ui.MUTED));
+        TextView timeout=Ui.text(this,timeoutLabel(app.store.hudTimeoutMs()),17,Ui.TEXT);body.addView(timeout);
+        SeekBar timeoutSlider=new SeekBar(this);timeoutSlider.setMax(60);timeoutSlider.setProgress(app.store.hudTimeoutMs()/500);timeoutSlider.setContentDescription("菜单自动隐藏时间，0 到 30 秒，0 为常驻");body.addView(timeoutSlider);
+        timeoutSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean user){timeout.setText(timeoutLabel(p*500));if(user)app.store.setHudTimeoutMs(p*500);}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
+        body.addView(Ui.text(this,"分区手势",18,Ui.BLUE));
+        body.addView(Ui.text(this,"播放区域三等分；缩放状态拖动平移，不触发长按调速。",12,Ui.MUTED));
+        for(int zone=0;zone<3;zone++){
+            body.addView(Ui.text(this,new String[]{"上区","中区","下区"}[zone],16,Ui.TEXT));
+            addGestureSetting(body,zone,"tap","单击");addGestureSetting(body,zone,"double","双击");
+            addGestureSetting(body,zone,"hold","长按");addGestureSetting(body,zone,"drag","左右拖动");
+        }
         body.addView(Ui.text(this,"当前来源",18,Ui.BLUE));
         body.addView(Ui.text(this,"点击服务器选择；编辑与删除按钮在每条记录下方。",13,Ui.MUTED));servers=Ui.column(this);body.addView(servers);
         body.addView(Ui.button(this,"＋ 添加服务器",()->form(new Server())));
         TextView info=Ui.text(this,"目录浏览和播放仅用于读取；播放器菜单中的“删除”会在确认后删除服务器原文件。WebDAV 支持 Basic 认证或匿名访问，不支持 Digest / OAuth。",14,Ui.MUTED);info.setPadding(0,Ui.dp(this,18),0,Ui.dp(this,18));body.addView(info);
-        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存，已关闭应用备份。无广告、无统计 SDK。\nFlowStream 0.7.0",13,Ui.MUTED));
+        body.addView(Ui.text(this,"隐私与版本\n密码用 Android Keystore 加密保存，已关闭应用备份。无广告、无统计 SDK。\nFlowStream 0.8.0",13,Ui.MUTED));
         setContentView(root);Ui.safeInsets(this,root);Ui.systemBars(this);refresh();
+    }
+    private String timeoutLabel(int ms){return "菜单自动隐藏 · "+(ms==0?"常驻":String.format(Locale.ROOT,"%.1f 秒",ms/1000f));}
+    private void addGestureSetting(LinearLayout body,int zone,String kind,String title){
+        Button button=Ui.button(this,title+" · "+GestureBindings.label(app.store.gestureAction(zone,kind)),()->{});
+        button.setOnClickListener(v->{String[] values=GestureBindings.actions(kind);String[] labels=new String[values.length];int selected=0;
+            for(int i=0;i<values.length;i++){labels[i]=GestureBindings.label(values[i]);if(values[i].equals(app.store.gestureAction(zone,kind)))selected=i;}
+            new AlertDialog.Builder(this).setTitle(new String[]{"上区","中区","下区"}[zone]+" · "+title).setSingleChoiceItems(labels,selected,(d,which)->{app.store.setGestureAction(zone,kind,values[which]);button.setText(title+" · "+labels[which]);d.dismiss();}).setNegativeButton("取消",null).show();
+        });body.addView(button);
     }
     private void refresh(){final int token=++generation;app.disk.execute(()->{
         try{List<Server> result=app.store.servers();app.main.post(()->{

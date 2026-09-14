@@ -28,7 +28,7 @@ public final class SpeedScale {
     }
     public static float reverseHold(float dxDp, float rangeDp) {
         float t = progress(Math.abs(dxDp), Math.max(.01f, rangeDp), 4f);
-        return Math.round((dxDp < 0 ? 1f + 3f * t : 1f - .9f * t) * 20f) / 20f;
+        return Math.round((dxDp < 0 ? 1f + 4f * t : 1f - .9f * t) * 20f) / 20f;
     }
     /** Bottom hold: 12dp jitter dead zone; -120dp -> 1x; +180dp -> 5x. */
     public static float bottom(float dxDp) {

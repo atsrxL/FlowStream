@@ -1,0 +1,75 @@
+PASS settings retain HUD timeout and RAM mode
+PASS RAM prefix range EOF budget cancellation tests
+PASS three gesture zones ordered within actual bounds
+PASS middle double fit preserves pause
+PASS middle double native
+PASS middle double width
+PASS upper single has no action
+PASS blank above gesture zones has no tap action
+PASS lower double plays without fit
+PASS lower double pauses
+PASS lower single hides HUD keeps timeline
+PASS lower single shows HUD
+PASS control exists +3s
+PASS plus three seconds
+PASS control exists -3s
+PASS minus three seconds
+PASS media info opens
+PASS outside info tap dismisses without playback
+PASS lock blocks playback gestures keeps timeline
+PASS middle drag scrubs preserving pause
+PASS middle drag owns scrub
+PASS scrub shows decoded thumbnail
+PASS preview sits above bottom timeline
+PASS scrub release hides preview and preserves pause
+PASS upper hold one cm reaches reverse 5x
+PASS reverse hold preserves timeline
+PASS upper hold right one cm reverse 0.1x
+PASS reverse release preserves pause
+PASS lower hold one cm reaches forward 5x
+PASS lower hold left one cm forward 0.1x
+PASS forward release restores base and pause
+PASS upward swipe within gesture bounds opens next
+PASS downward swipe returns previous
+PASS two finger pinch enters custom zoom
+PASS custom zoom upper long hold never starts reverse
+PASS zoom vertical drag pans without switching
+PASS custom lower double restores width without play
+PASS settings retain HUD timeout and RAM mode
+PASS RAM prefix range EOF budget cancellation tests
+PASS three gesture zones ordered within actual bounds
+PASS middle double fit preserves pause
+PASS middle double native
+PASS middle double width
+PASS upper single has no action
+PASS blank above gesture zones has no tap action
+PASS lower double plays without fit
+PASS lower double pauses
+PASS lower single hides HUD keeps timeline
+PASS lower single shows HUD
+PASS control exists +3s
+PASS plus three seconds
+PASS control exists -3s
+PASS minus three seconds
+PASS media info opens
+PASS outside info tap dismisses without playback
+PASS lock blocks playback gestures keeps timeline
+PASS middle drag scrubs preserving pause
+PASS middle drag owns scrub
+PASS scrub shows decoded thumbnail
+PASS preview sits above bottom timeline
+PASS scrub release hides preview and preserves pause
+PASS upper hold one cm reaches reverse 5x
+PASS reverse hold preserves timeline
+PASS upper hold right one cm reverse 0.1x
+PASS reverse release preserves pause
+PASS lower hold one cm reaches forward 5x
+PASS lower hold left one cm forward 0.1x
+PASS forward release restores base and pause
+PASS upward swipe within gesture bounds opens next
+PASS downward swipe returns previous
+PASS two finger pinch enters custom zoom
+PASS custom zoom upper long hold never starts reverse
+PASS zoom vertical drag pans without switching
+PASS custom lower double restores width without play
+

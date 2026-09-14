@@ -7,9 +7,9 @@ android {
         applicationId 'dev.flowstream.player'
         minSdk 26
         targetSdk 36
-        versionCode 11
-        versionName '0.7.0'
-        testInstrumentationRunner project.hasProperty('gestureChecks') ? 'dev.flowstream.player.GestureChecks' : project.hasProperty('deleteChecks') ? 'dev.flowstream.player.DeletionChecks' : 'dev.flowstream.player.DeviceChecks'
+        versionCode 12
+        versionName '0.8.0'
+        testInstrumentationRunner project.hasProperty('odsChecks') ? 'dev.flowstream.player.OdsChecks' : project.hasProperty('gestureChecks') ? 'dev.flowstream.player.GestureChecks' : project.hasProperty('deleteChecks') ? 'dev.flowstream.player.DeletionChecks' : 'dev.flowstream.player.DeviceChecks'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

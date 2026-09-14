@@ -27,11 +27,19 @@ public final class Store extends SQLiteOpenHelper {
     public void setRandomMode(boolean enabled){prefs.edit().putBoolean("random_mode",enabled).apply();}
     public int preloadMb() { return Math.max(0,Math.min(50,prefs.getInt("preload_mb",10))); }
     public void setPreloadMb(int mb) { prefs.edit().putInt("preload_mb",Math.max(0,Math.min(50,mb))).apply(); }
-    public float sourceSpeed(String id) { return prefs.getFloat("speed."+id,1f); }
+    public String gestureAction(int zone,String kind) { return GestureBindings.normalize(zone,kind,prefs.getString("gesture."+zone+"."+kind,GestureBindings.defaultAction(zone,kind))); }
+    public void setGestureAction(int zone,String kind,String action) { prefs.edit().putString("gesture."+zone+"."+kind,GestureBindings.normalize(zone,kind,action)).apply(); }
+    public int hudTimeoutMs() { return Math.max(0,Math.min(30000,prefs.getInt("hud_timeout_ms",3500))); }
+    public void setHudTimeoutMs(int value) { prefs.edit().putInt("hud_timeout_ms",Math.max(0,Math.min(30000,value))).apply(); }
+    public boolean memoryPreload() { return prefs.getBoolean("memory_preload",false); }
+    public void setMemoryPreload(boolean enabled) { prefs.edit().putBoolean("memory_preload",enabled).apply(); }
+    public float globalSpeed() { return SpeedScale.normalize(prefs.getFloat("global_speed",1f)); }
+    public void setGlobalSpeed(float value) { prefs.edit().putFloat("global_speed",SpeedScale.normalize(value)).apply(); }
+    public float sourceSpeed(String id) { return globalSpeed(); }
     public int sourcePreset(String id){return Math.max(0,Math.min(2,prefs.getInt("preset."+id,prefs.getBoolean("native."+id,false)?2:0)));}
     public void saveSourcePreset(String id,int preset){prefs.edit().putInt("preset."+id,preset).putBoolean("native."+id,preset==2).apply();}
     public boolean sourceNative(String id) { return prefs.getBoolean("native."+id,false); }
-    public void saveSourcePlayback(String id,float speed,boolean nativeSize) { prefs.edit().putFloat("speed."+id,speed).putBoolean("native."+id,nativeSize).apply(); }
+    public void saveSourcePlayback(String id,float speed,boolean nativeSize) { prefs.edit().putFloat("global_speed",SpeedScale.normalize(speed)).putBoolean("native."+id,nativeSize).apply(); }
     public String theme(){return prefs.getString("theme","system");}
     public void setTheme(String value){prefs.edit().putString("theme",value).apply();}
     @Override public void onOpen(SQLiteDatabase db){super.onOpen(db);db.delete("sessions",null,null);prefs.edit().remove("bookmarks").apply();}

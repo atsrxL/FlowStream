@@ -23,12 +23,20 @@ public final class GestureMachine {
     private Mode mode = Mode.IDLE;
     private float x0, y0, x, y, width, height, slop, maxTravel;
     private int zone;
+    private final String[] zoneHold = {"reverse", "none", "forward"};
+    private final String[] zoneDrag = {"none", "scrub", "none"};
     private float holdRangeDp = 160f / 2.54f;
+    private float topEdgeDp=12f,bottomEdgeDp=32f;
     private long downAt, lastSwitch = Long.MIN_VALUE / 2;
     private boolean holdActive, inspectMode;
 
     public GestureMachine(Output out) { this.out = out; }
     public Mode mode() { return mode; }
+    public void setZoneHoldAction(int zone,String action) { zoneHold[zone]=GestureBindings.normalize(zone,"hold",action); }
+    public void setZoneDragAction(int zone,String action) { zoneDrag[zone]=GestureBindings.normalize(zone,"drag",action); }
+    public void setVerticalEdgeInsets(float top,float bottom) {
+        if(Float.isFinite(top)&&Float.isFinite(bottom)&&top>=0&&bottom>=0){topEdgeDp=top;bottomEdgeDp=bottom;}
+    }
     /** Physical one-centimetre horizontal distance converted by the Android display metrics. */
     public void setHoldRangeDp(float rangeDp) {
         if (Float.isFinite(rangeDp) && rangeDp > 0) holdRangeDp = rangeDp;
@@ -45,16 +53,17 @@ public final class GestureMachine {
         downAt = now;
         zone = Math.min(2, Math.max(0, (int) (3f * y / this.height)));
         // Reserve Android back/home gesture edges. An edge touch cannot trigger any player gesture.
-        mode = (x < 24 || x > width - 24 || y < 12 || y > height - 32)
+        mode = (x < 24 || x > width - 24 || y < topEdgeDp || y > height - bottomEdgeDp)
                 ? Mode.REJECTED : Mode.PENDING;
     }
     public void holdTimeout(long now) {
         if (mode != Mode.PENDING || now - downAt < HOLD_MS || maxTravel > slop) return;
-        if (zone == 1) return;
-        mode = zone == 0 ? Mode.HOLD_TOP : Mode.HOLD_BOTTOM;
+        if (inspectMode || "none".equals(zoneHold[zone])) return;
+        boolean reverse = "reverse".equals(zoneHold[zone]);
+        mode = reverse ? Mode.HOLD_TOP : Mode.HOLD_BOTTOM;
         holdActive = true;
         out.holdStarted();
-        if (zone == 0) out.reverse(1f); else out.forward(2f);
+        if (reverse) out.reverse(1f); else out.forward(2f);
     }
     public void move(float nx, float ny, long now) {
         float previousX = x, previousY = y;
@@ -71,7 +80,7 @@ public final class GestureMachine {
                 if (Math.abs(dy) >= slop && Math.abs(dy) >= AXIS_RATIO * Math.abs(dx)) {
                     mode = Mode.VERTICAL;
                 } else if (Math.abs(dx) >= slop && Math.abs(dx) >= AXIS_RATIO * Math.abs(dy)) {
-                    if (zone == 1) {
+                    if ("scrub".equals(zoneDrag[zone])) {
                         mode = Mode.SCRUB;
                         out.scrubStarted();
                         out.scrubMoved(dx, width);
