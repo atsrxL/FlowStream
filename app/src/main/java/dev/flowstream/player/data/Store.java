@@ -44,12 +44,12 @@ public final class Store extends SQLiteOpenHelper {
     public void setThumbnailMode(boolean enabled){prefs.edit().putBoolean("thumbnail_mode",enabled).apply();}
     public boolean randomMode(){return prefs.getBoolean("random_mode",false);}
     public void setRandomMode(boolean enabled){prefs.edit().putBoolean("random_mode",enabled).apply();}
-    public int preloadMb() { return Math.max(0,Math.min(50,prefs.getInt("preload_mb",10))); }
-    public void setPreloadMb(int mb) { prefs.edit().putInt("preload_mb",Math.max(0,Math.min(50,mb))).apply(); }
-    public String gestureAction(int zone,String kind) { return GestureBindings.normalize(zone,kind,prefs.getString("gesture."+zone+"."+kind,GestureBindings.defaultAction(zone,kind))); }
-    public void setGestureAction(int zone,String kind,String action) { prefs.edit().putString("gesture."+zone+"."+kind,GestureBindings.normalize(zone,kind,action)).apply(); }
-    public int hudTimeoutMs() { return Math.max(0,Math.min(30000,prefs.getInt("hud_timeout_ms",3500))); }
-    public void setHudTimeoutMs(int value) { prefs.edit().putInt("hud_timeout_ms",Math.max(0,Math.min(30000,value))).apply(); }
+    public int preloadMb() { return Math.max(50,Math.min(3072,prefs.getInt("preload_mb",50))); }
+    public void setPreloadMb(int mb) { prefs.edit().putInt("preload_mb",Math.max(50,Math.min(3072,mb))).apply(); }
+    public String gestureAction(int zone,String kind) { return GestureBindings.normalize(zone,kind,prefs.getString("gesture9."+(zone/3)+"."+(zone%3)+"."+kind,GestureBindings.defaultAction(zone,kind))); }
+    public void setGestureAction(int zone,String kind,String action) { prefs.edit().putString("gesture9."+(zone/3)+"."+(zone%3)+"."+kind,GestureBindings.normalize(zone,kind,action)).apply(); }
+    public int hudTimeoutMs() { return Math.max(1000,Math.min(10000,prefs.getInt("hud_timeout_ms",3500))); }
+    public void setHudTimeoutMs(int value) { prefs.edit().putInt("hud_timeout_ms",Math.max(1000,Math.min(10000,value))).apply(); }
     public boolean memoryPreload() { return prefs.getBoolean("memory_preload",false); }
     public void setMemoryPreload(boolean enabled) { prefs.edit().putBoolean("memory_preload",enabled).apply(); }
     public float globalSpeed() { return SpeedScale.normalize(prefs.getFloat("global_speed",1f)); }

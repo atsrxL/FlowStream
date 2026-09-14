@@ -274,9 +274,9 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     @Override public void singleTap(float x,float y){if(!inPip()&&!inspectMode())zoneAction(x,y,"tap");}
     @Override public void doubleTap(float x,float y){if(inPip())return;if(inspectMode()){transform.resetFit();fitChanged();}else zoneAction(x,y,"double");}
     private void zoneAction(float x,float y,String kind){
-        int zone=gestures.zoneAt(y);if(zone<0)return;
+        int zone=gestures.zoneAt(x,y);if(zone<0)return;
         String action=app.store.gestureAction(zone,kind);
-        if("hud".equals(action))toggleControls();else if("play".equals(action))togglePlayback();else if("fit".equals(action)){transform.cyclePreset();fitChanged();}
+        if("hud".equals(action))toggleControls();else if("play".equals(action))togglePlayback();else if("seek_back_1".equals(action)){seekBy(-1000,false);flash("−1s");}else if("seek_forward_1".equals(action)){seekBy(1000,false);flash("+1s");}else if("fit".equals(action)){transform.cyclePreset();fitChanged();}
     }
     private void fitChanged(){if(server!=null)app.store.saveSourcePreset(server.id,transform.presetIndex());counter.setText(transform.label());flash(transform.label());showControls();}
     private void updateGestureBounds(){
@@ -299,7 +299,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     @Override public void scrubMoved(float totalDxDp,float widthDp){
         if(!scrubbing||!gestureScrub||player==null)return;long duration=player.getDuration();
         liveScrubTarget=Math.max(0,Math.min(duration-1,scrubStartPosition+Math.round(totalDxDp/Math.max(1,widthDp)*duration)));
-        seek.setProgress((int)(liveScrubTarget*10000d/duration));time.setText(Ui.time(liveScrubTarget)+"\n"+Ui.time(duration));
+        seek.setProgress((int)(liveScrubTarget*10000d/duration));time.setText(Ui.time(liveScrubTarget)+"\n"+Ui.time(duration));showPreview(liveScrubTarget);
         if(pendingScrubSeek==null){pendingScrubSeek=()->{pendingScrubSeek=null;if(scrubbing&&gestureScrub&&player!=null)player.seekTo(liveScrubTarget);};handler.postDelayed(pendingScrubSeek,100);}
     }
     @Override public void scrubEnded(boolean commit){
@@ -440,7 +440,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     }
     private void showPreview(long target){
         if(previewTime.getVisibility()!=View.VISIBLE){previewBottomVisibility=bottom.getVisibility();bottom.setVisibility(View.INVISIBLE);}
-        previewTarget=target;previewTime.setVisibility(View.VISIBLE);renderPreview();
+        previewTarget=target;previewTime.setVisibility(View.VISIBLE);persistentHint(Ui.time(target)+" / "+Ui.time(player==null?0:player.getDuration()));renderPreview();
         java.util.Map.Entry<Long,android.graphics.Bitmap> nearest=nearestPreview(target);
         if(nearest!=null&&Math.abs(nearest.getKey()-target)<400)return;
         // Throttle, never restart the timer on every MOVE: continuous dragging still gets frames.
@@ -490,6 +490,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         else getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
     void cancelScrub(){
+        if(scrubbing)persistentHint("");
         if(pendingScrubSeek!=null)handler.removeCallbacks(pendingScrubSeek);pendingScrubSeek=null;
         if(gestureScrub&&player!=null){player.setSeekParameters(SeekParameters.EXACT);player.seekTo(scrubStartPosition);player.setSeekParameters(scrubSeekParameters);}
         gestureScrub=false;

@@ -9,6 +9,7 @@ import dev.flowstream.player.FlowApp;
 import dev.flowstream.core.GestureBindings;
 import dev.flowstream.player.data.Server;
 import dev.flowstream.player.net.Browsers;
+import dev.flowstream.player.net.NextVideoCache;
 import java.util.*;
 
 public final class SettingsActivity extends BackActivity {
@@ -24,22 +25,24 @@ public final class SettingsActivity extends BackActivity {
         body.addView(Ui.button(this,"主题 · "+(app.store.theme().equals("black")?"黑":app.store.theme().equals("white")?"白":"跟随系统"),()->new AlertDialog.Builder(this).setTitle("主题").setSingleChoiceItems(new String[]{"黑","白","跟随系统"},app.store.theme().equals("black")?0:app.store.theme().equals("white")?1:2,(d,which)->{app.store.setTheme(new String[]{"black","white","system"}[which]);d.dismiss();recreate();}).setNegativeButton("取消",null).show()));
         Button clearThumbs=Ui.button(this,"清除文件缩略图缓存",()->{});clearThumbs.setOnClickListener(v->{clearThumbs.setEnabled(false);app.thumbnails.clear(()->{if(!isDestroyed()){clearThumbs.setEnabled(true);Ui.toast(this,"文件缩略图缓存已清除");}});});body.addView(clearThumbs);
         body.addView(Ui.text(this,"缩略图缓存上限 128 MB。",12,Ui.MUTED));
+        Button clearVideo=Ui.button(this,"清除视频缓存",()->{});clearVideo.setOnClickListener(v->{clearVideo.setEnabled(false);NextVideoCache.clear(this,error->{if(!isDestroyed()){clearVideo.setEnabled(true);Ui.toast(this,error==null?"视频缓存已清除":Ui.error(error));}});});body.addView(clearVideo);
         TextView preload=Ui.text(this,"下一条预读 · "+app.store.preloadMb()+" MB",17,Ui.TEXT);body.addView(preload);
-        SeekBar preloadSize=new SeekBar(this);preloadSize.setMax(50);preloadSize.setProgress(app.store.preloadMb());preloadSize.setContentDescription("下一条预读大小，0 到 50 MB");body.addView(preloadSize);
+        TextView memoryBudget=Ui.text(this,"",12,Ui.MUTED);
+        Runnable refreshBudget=()->{memoryBudget.setText(app.store.memoryPreload()?String.format(Locale.ROOT,"请求 %d MB · 当前可用预读预算 %.1f MB",app.store.preloadMb(),NextVideoCache.effectiveRamBudgetBytes(this,app.store.preloadMb())/1048576d):"磁盘缓存 · 按设定大小预读；HLS / DASH 暂不支持。");};
+        SeekBar preloadSize=new SeekBar(this);preloadSize.setMax(3072-50);preloadSize.setProgress(app.store.preloadMb()-50);preloadSize.setContentDescription("下一条预读大小，50 MB 到 3 GB");body.addView(preloadSize);
         preloadSize.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
-            public void onProgressChanged(SeekBar b,int p,boolean user){preload.setText("下一条预读 · "+(p==0?"关闭":p+" MB"));if(user)app.store.setPreloadMb(p);}
+            public void onProgressChanged(SeekBar b,int p,boolean user){preload.setText("下一条预读 · "+(p+50)+" MB");if(user)app.store.setPreloadMb(p+50);refreshBudget.run();}
             public void onStartTrackingTouch(SeekBar b){} public void onStopTrackingTouch(SeekBar b){}
         });
-        body.addView(Ui.text(this,"0 为关闭；HLS / DASH 暂不支持。",12,Ui.MUTED));
-        Switch memory=new Switch(this);memory.setText("预读保存在内存");memory.setChecked(app.store.memoryPreload());memory.setOnCheckedChangeListener((v,checked)->app.store.setMemoryPreload(checked));body.addView(memory);
-        body.addView(Ui.text(this,"关闭时使用磁盘缓存。",12,Ui.MUTED));
+        body.addView(Ui.button(this,"输入预读大小",()->{EditText input=new EditText(this);input.setInputType(InputType.TYPE_CLASS_NUMBER);input.setText(String.valueOf(app.store.preloadMb()));AlertDialog dialog=new AlertDialog.Builder(this).setTitle("预读大小 · MB（50–3072）").setView(input).setNegativeButton("取消",null).setPositiveButton("确定",null).create();dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{try{int value=Integer.parseInt(input.getText().toString());if(value<50||value>3072)throw new NumberFormatException();app.store.setPreloadMb(value);preloadSize.setProgress(value-50);refreshBudget.run();dialog.dismiss();}catch(NumberFormatException e){input.setError("请输入 50 到 3072");}}));dialog.show();}));
+        Switch memory=new Switch(this);memory.setText("预读保存在内存");memory.setChecked(app.store.memoryPreload());memory.setOnCheckedChangeListener((v,checked)->{app.store.setMemoryPreload(checked);refreshBudget.run();});body.addView(memory);body.addView(memoryBudget);refreshBudget.run();
         TextView timeout=Ui.text(this,timeoutLabel(app.store.hudTimeoutMs()),17,Ui.TEXT);body.addView(timeout);
-        SeekBar timeoutSlider=new SeekBar(this);timeoutSlider.setMax(60);timeoutSlider.setProgress(app.store.hudTimeoutMs()/500);timeoutSlider.setContentDescription("菜单自动隐藏时间，0 到 30 秒，0 为常驻");body.addView(timeoutSlider);
-        timeoutSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean user){timeout.setText(timeoutLabel(p*500));if(user)app.store.setHudTimeoutMs(p*500);}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
-        body.addView(Ui.text(this,"分区手势",18,Ui.BLUE));
+        SeekBar timeoutSlider=new SeekBar(this);timeoutSlider.setMax(18);timeoutSlider.setProgress((app.store.hudTimeoutMs()-1000)/500);timeoutSlider.setContentDescription("菜单自动隐藏时间，1 到 10 秒");body.addView(timeoutSlider);
+        timeoutSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean user){timeout.setText(timeoutLabel(1000+p*500));if(user)app.store.setHudTimeoutMs(1000+p*500);}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
+        body.addView(Ui.text(this,"九宫格手势",18,Ui.BLUE));
         body.addView(Ui.text(this,"缩放时仅平移和双击适屏。",12,Ui.MUTED));
-        for(int zone=0;zone<3;zone++){
-            body.addView(Ui.text(this,new String[]{"上区","中区","下区"}[zone],16,Ui.TEXT));
+        for(int zone=0;zone<9;zone++){
+            body.addView(Ui.text(this,zoneLabel(zone),16,Ui.TEXT));
             addGestureSetting(body,zone,"tap","单击");addGestureSetting(body,zone,"double","双击");
             addGestureSetting(body,zone,"hold","长按");addGestureSetting(body,zone,"drag","左右拖动");
         }
@@ -47,15 +50,16 @@ public final class SettingsActivity extends BackActivity {
         body.addView(Ui.text(this,"选择播放来源。",13,Ui.MUTED));servers=Ui.column(this);body.addView(servers);
         body.addView(Ui.button(this,"＋ 添加服务器",()->form(new Server())));
         TextView info=Ui.text(this,"WebDAV 支持 Basic 认证及匿名访问。",14,Ui.MUTED);info.setPadding(0,Ui.dp(this,18),0,Ui.dp(this,18));body.addView(info);
-        body.addView(Ui.text(this,"FlowStream 0.8.1",13,Ui.MUTED));
+        body.addView(Ui.text(this,"FlowStream 0.9.0",13,Ui.MUTED));
         setContentView(root);Ui.safeInsets(this,root);Ui.systemBars(this);refresh();
     }
-    private String timeoutLabel(int ms){return "菜单自动隐藏 · "+(ms==0?"常驻":String.format(Locale.ROOT,"%.1f 秒",ms/1000f));}
+    private String timeoutLabel(int ms){return "菜单自动隐藏 · "+String.format(Locale.ROOT,"%.1f 秒",ms/1000f);}
+    private String zoneLabel(int zone){return new String[]{"上左","上中","上右","中左","中央","中右","下左","下中","下右"}[zone];}
     private void addGestureSetting(LinearLayout body,int zone,String kind,String title){
         Button button=Ui.button(this,title+" · "+GestureBindings.label(app.store.gestureAction(zone,kind)),()->{});
         button.setOnClickListener(v->{String[] values=GestureBindings.actions(kind);String[] labels=new String[values.length];int selected=0;
             for(int i=0;i<values.length;i++){labels[i]=GestureBindings.label(values[i]);if(values[i].equals(app.store.gestureAction(zone,kind)))selected=i;}
-            new AlertDialog.Builder(this).setTitle(new String[]{"上区","中区","下区"}[zone]+" · "+title).setSingleChoiceItems(labels,selected,(d,which)->{app.store.setGestureAction(zone,kind,values[which]);button.setText(title+" · "+labels[which]);d.dismiss();}).setNegativeButton("取消",null).show();
+            new AlertDialog.Builder(this).setTitle(zoneLabel(zone)+" · "+title).setSingleChoiceItems(labels,selected,(d,which)->{app.store.setGestureAction(zone,kind,values[which]);button.setText(title+" · "+labels[which]);d.dismiss();}).setNegativeButton("取消",null).show();
         });body.addView(button);
     }
     private void refresh(){final int token=++generation;app.disk.execute(()->{

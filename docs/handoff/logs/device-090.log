@@ -1,0 +1,151 @@
+PASS 3 GiB arithmetic and bounded RAM budgets
+PASS persistent cache clear removes only isolated cache spans
+PASS preview range cache and stream reuse
+PASS fixture contains videos
+PASS control exists 标记
+PASS player mark button adds persistent media mark
+PASS mark survives fresh Store instance
+PASS control exists 取消标记
+PASS player mark button toggles off
+PASS control exists 标记
+PASS matrix exact column boundary row=0 x=0.0
+PASS matrix exact column boundary row=0 x=243.5
+PASS matrix exact column boundary row=0 x=244.0
+PASS matrix exact column boundary row=0 x=975.5
+PASS matrix exact column boundary row=0 x=976.0
+PASS matrix exact column boundary row=0 x=1219.5
+PASS matrix exact column boundary row=1 x=0.0
+PASS matrix exact column boundary row=1 x=243.5
+PASS matrix exact column boundary row=1 x=244.0
+PASS matrix exact column boundary row=1 x=975.5
+PASS matrix exact column boundary row=1 x=976.0
+PASS matrix exact column boundary row=1 x=1219.5
+PASS matrix exact column boundary row=2 x=0.0
+PASS matrix exact column boundary row=2 x=243.5
+PASS matrix exact column boundary row=2 x=244.0
+PASS matrix exact column boundary row=2 x=975.5
+PASS matrix exact column boundary row=2 x=976.0
+PASS matrix exact column boundary row=2 x=1219.5
+PASS matrix excludes horizontal outside
+PASS matrix equal row boundaries
+PASS left double back one second keeps pause y=1308.0
+PASS right double forward one second keeps pause y=1308.0
+PASS left double back one second keeps pause y=1922.5
+PASS right double forward one second keeps pause y=1922.5
+PASS middle centre double changes width to height only
+PASS middle centre double native
+PASS middle centre double width
+PASS lower centre double plays without fit
+PASS lower centre double pauses
+PASS top matrix column has no default actions x=122.0
+PASS top matrix column has no default actions x=610.0
+PASS top matrix column has no default actions x=1098.0
+PASS middle/lower single hides HUD
+PASS middle/lower single shows HUD
+PASS middle/lower single hides HUD
+PASS middle/lower single shows HUD
+PASS zone continuous drag owns scrub
+PASS zone drag updates actual player before finger UP
+PASS zone drag renders a changed video frame while finger remains down
+PASS zone live seek also shows thumbnail
+PASS C2 status displays live drag time
+PASS zone cancel restores original position and pause
+PASS zone continuous drag owns scrub
+PASS zone drag updates actual player before finger UP
+PASS zone drag renders a changed video frame while finger remains down
+PASS zone live seek also shows thumbnail
+PASS C2 status displays live drag time
+PASS zone cancel restores original position and pause
+PASS pinch enters zoom before timeline test
+PASS timeline long press starts scrub while zoomed
+PASS timeline decoded thumbnail appears during continuous MOVE events
+PASS timeline preview catches up to last requested target
+PASS final preview label no longer loading
+PASS preview stays above timeline
+PASS timeline release hides preview and preserves pause
+PASS timeline drag preserves custom zoom
+PASS double returns width after timeline scrub
+PASS lower horizontal drag starts progress scrub
+PASS lower scrub changes position and preserves pause
+PASS forward hold HUD is concise: 快进 5×
+PASS reverse hold HUD is concise: 快退 5×
+PASS main has marks navigation
+PASS marks tab shows marked fixture
+PASS marked entry opens player
+PASS marked entry rebuilds full original-folder queue
+PASS 3 GiB arithmetic and bounded RAM budgets
+PASS persistent cache clear removes only isolated cache spans
+PASS preview range cache and stream reuse
+PASS fixture contains videos
+PASS control exists 标记
+PASS player mark button adds persistent media mark
+PASS mark survives fresh Store instance
+PASS control exists 取消标记
+PASS player mark button toggles off
+PASS control exists 标记
+PASS matrix exact column boundary row=0 x=0.0
+PASS matrix exact column boundary row=0 x=243.5
+PASS matrix exact column boundary row=0 x=244.0
+PASS matrix exact column boundary row=0 x=975.5
+PASS matrix exact column boundary row=0 x=976.0
+PASS matrix exact column boundary row=0 x=1219.5
+PASS matrix exact column boundary row=1 x=0.0
+PASS matrix exact column boundary row=1 x=243.5
+PASS matrix exact column boundary row=1 x=244.0
+PASS matrix exact column boundary row=1 x=975.5
+PASS matrix exact column boundary row=1 x=976.0
+PASS matrix exact column boundary row=1 x=1219.5
+PASS matrix exact column boundary row=2 x=0.0
+PASS matrix exact column boundary row=2 x=243.5
+PASS matrix exact column boundary row=2 x=244.0
+PASS matrix exact column boundary row=2 x=975.5
+PASS matrix exact column boundary row=2 x=976.0
+PASS matrix exact column boundary row=2 x=1219.5
+PASS matrix excludes horizontal outside
+PASS matrix equal row boundaries
+PASS left double back one second keeps pause y=1308.0
+PASS right double forward one second keeps pause y=1308.0
+PASS left double back one second keeps pause y=1922.5
+PASS right double forward one second keeps pause y=1922.5
+PASS middle centre double changes width to height only
+PASS middle centre double native
+PASS middle centre double width
+PASS lower centre double plays without fit
+PASS lower centre double pauses
+PASS top matrix column has no default actions x=122.0
+PASS top matrix column has no default actions x=610.0
+PASS top matrix column has no default actions x=1098.0
+PASS middle/lower single hides HUD
+PASS middle/lower single shows HUD
+PASS middle/lower single hides HUD
+PASS middle/lower single shows HUD
+PASS zone continuous drag owns scrub
+PASS zone drag updates actual player before finger UP
+PASS zone drag renders a changed video frame while finger remains down
+PASS zone live seek also shows thumbnail
+PASS C2 status displays live drag time
+PASS zone cancel restores original position and pause
+PASS zone continuous drag owns scrub
+PASS zone drag updates actual player before finger UP
+PASS zone drag renders a changed video frame while finger remains down
+PASS zone live seek also shows thumbnail
+PASS C2 status displays live drag time
+PASS zone cancel restores original position and pause
+PASS pinch enters zoom before timeline test
+PASS timeline long press starts scrub while zoomed
+PASS timeline decoded thumbnail appears during continuous MOVE events
+PASS timeline preview catches up to last requested target
+PASS final preview label no longer loading
+PASS preview stays above timeline
+PASS timeline release hides preview and preserves pause
+PASS timeline drag preserves custom zoom
+PASS double returns width after timeline scrub
+PASS lower horizontal drag starts progress scrub
+PASS lower scrub changes position and preserves pause
+PASS forward hold HUD is concise: 快进 5×
+PASS reverse hold HUD is concise: 快退 5×
+PASS main has marks navigation
+PASS marks tab shows marked fixture
+PASS marked entry opens player
+PASS marked entry rebuilds full original-folder queue
+

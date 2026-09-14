@@ -23,14 +23,14 @@ public final class GestureMachine {
     private Mode mode = Mode.IDLE;
     private float x0, y0, x, y, width, height, slop, maxTravel;
     private int zone;
-    private final String[] zoneHold = {"reverse", "none", "forward"};
-    private final String[] zoneDrag = {"none", "scrub", "scrub"};
+    private final String[] zoneHold = new String[GestureBindings.COUNT];
+    private final String[] zoneDrag = new String[GestureBindings.COUNT];
     private float holdRangeDp = 160f / 2.54f;
     private float topEdgeDp=12f,bottomEdgeDp=32f;
     private long downAt, lastSwitch = Long.MIN_VALUE / 2;
     private boolean holdActive, inspectMode;
 
-    public GestureMachine(Output out) { this.out = out; }
+    public GestureMachine(Output out) { this.out = out; for(int z=0;z<GestureBindings.COUNT;z++){zoneHold[z]=GestureBindings.defaultAction(z,"hold");zoneDrag[z]=GestureBindings.defaultAction(z,"drag");} }
     public Mode mode() { return mode; }
     public void setZoneHoldAction(int zone,String action) { zoneHold[zone]=GestureBindings.normalize(zone,"hold",action); }
     public void setZoneDragAction(int zone,String action) { zoneDrag[zone]=GestureBindings.normalize(zone,"drag",action); }
@@ -51,9 +51,9 @@ public final class GestureMachine {
         this.width = Math.max(1, width); this.height = Math.max(1, height);
         this.slop = Math.max(12f, platformSlop); maxTravel = 0;
         downAt = now;
-        zone = Math.min(2, Math.max(0, (int) (3f * y / this.height)));
+        zone = GestureBindings.zoneAt(x,y,this.width,this.height);
         // Reserve Android back/home gesture edges. An edge touch cannot trigger any player gesture.
-        mode = (x < 24 || x > width - 24 || y < topEdgeDp || y > height - bottomEdgeDp)
+        mode = (zone < 0 || x < 24 || x > width - 24 || y < topEdgeDp || y > height - bottomEdgeDp)
                 ? Mode.REJECTED : Mode.PENDING;
     }
     public void holdTimeout(long now) {

@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.*;
 import dev.flowstream.core.GestureMachine;
+import dev.flowstream.core.GestureBindings;
 import dev.flowstream.core.TapResolver;
 import dev.flowstream.player.FlowApp;
 import dev.flowstream.player.data.Store;
@@ -84,7 +85,7 @@ public final class GestureOverlay extends View {
         scaleDetector.setQuickScaleEnabled(false);
         scaleDetector.setStylusScaleEnabled(false);
         setClickable(true); setFocusable(true);
-        setContentDescription("视频手势区域。上中下三等分区域的单击、双击、长按和左右拖动可在设置中配置；双指缩放后拖动画面且不切片；预设模式上下滑动切片。");
+        setContentDescription("视频手势区域。九个区域的单击、双击、长按和左右拖动可在设置中配置；双指缩放后拖动画面且不切片；预设模式上下滑动切片。");
     }
 
     /** Bounds are overlay-local pixels; OSD controls remain outside the interaction region. */
@@ -95,16 +96,16 @@ public final class GestureOverlay extends View {
         cancelGesture(); interactionTop = top; interactionBottom = bottom;
     }
     private float regionBottom() { return Float.isNaN(interactionBottom) ? getHeight() : Math.min(getHeight(), interactionBottom); }
-    public int zoneAt(float y) {
-        float bottom = regionBottom();
-        if (!Float.isFinite(y) || y < interactionTop || y >= bottom || bottom <= interactionTop) return -1;
-        return Math.min(2, (int)(3f * (y - interactionTop) / (bottom - interactionTop)));
+    /** Compatibility for callers probing the centre column. */
+    public int zoneAt(float y) { return zoneAt(getWidth()/2f,y); }
+    public int zoneAt(float x,float y) {
+        return GestureBindings.zoneAt(x,y-interactionTop,getWidth(),regionBottom()-interactionTop);
     }
 
     @Override public boolean onTouchEvent(MotionEvent e) {
         int action = e.getActionMasked();
         if (action == MotionEvent.ACTION_DOWN) {
-            int zone = zoneAt(e.getY());
+            int zone = zoneAt(e.getX(),e.getY());
             if (zone < 0) { cancelGesture(); return false; }
             // A first tap in another zone is an independent single, never a double.
             if (tapZone >= 0 && tapZone != zone) {

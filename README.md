@@ -1,3 +1,11 @@
+# FlowStream 0.9.0 · 九区手势与缓存设置
+
+按最新版《映流.ods》实现九区动作、1–10秒HUD、50MB–3GB视频预读及缓存清理，并补全原ODS遗漏功能。
+
+[APK](dist/FlowStream-0.9.0-debug.apk) · [当前交互](docs/GESTURES.md) · [验证](docs/handoff/RESULTS-0.9.0.md)。调试设备motorola edge 70，Android16，192.168.123.52:5555。
+
+以下为历史版本记录。
+
 # FlowStream 0.8.1 · 预览优化与标记
 
 按更新的《映流.ods》增加标记入口、标记列表及下区横拖进度。预览复用独立连接与分块缓存；状态简化为“快进／快退”。
