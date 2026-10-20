@@ -1,0 +1,75 @@
+name: FlowStream
+options:
+  bundleIdPrefix: dev.flowstream
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.9.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  AMSMB2:
+    url: https://github.com/amosavian/AMSMB2
+    exactVersion: 4.0.3
+schemes:
+  FlowStream:
+    build:
+      targets:
+        FlowStream: all
+    test:
+      targets: [FlowStreamUITests]
+targets:
+  FlowStreamUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: FlowStream
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.flowstream.player.ios.uitests
+        TEST_TARGET_NAME: FlowStream
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+  FlowStream:
+    type: application
+    platform: iOS
+    sources:
+      - path: FlowStream
+    dependencies:
+      - package: AMSMB2
+        embed: true
+    info:
+      path: FlowStream/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: 流映
+        CFBundleName: FlowStream
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UIDeviceFamily: [1, 2]
+        UIBackgroundModes: [audio]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSLocalNetworkUsageDescription: 流映需要访问局域网内的 SMB / WebDAV 媒体服务器。
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleIcons:
+          CFBundlePrimaryIcon:
+            CFBundleIconFiles: [AppIcon60x60]
+            CFBundleIconName: AppIcon
+        CFBundleIcons~ipad:
+          CFBundlePrimaryIcon:
+            CFBundleIconFiles: [AppIcon60x60, AppIcon76x76, AppIcon83.5x83.5]
+            CFBundleIconName: AppIcon
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.flowstream.player.ios
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGN_IDENTITY: ""
+        ENABLE_USER_SCRIPT_SANDBOXING: NO

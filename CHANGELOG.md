@@ -1,3 +1,7 @@
+# iOS / iPadOS 0.9.0
+
+新增 `ios/`：SwiftUI + UIKit 原生版，移植九区手势、SMB/WebDAV、预读、标记、删除等 0.9.0 功能；播放器为 AVPlayer，仅 MP4/MOV/M4V/3GP。见 [ios/README.md](ios/README.md)。
+
 ## 0.9.0 · 2026-09-14
 
 按最新版四页ODS实现九区动作矩阵、双击±1秒、C2拖动时间、1–10秒HUD、50MB–3GB持久视频预读及清空。原ODS补回30条已有功能说明，保留原单元格与合并布局。

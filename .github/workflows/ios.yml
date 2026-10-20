@@ -1,0 +1,16 @@
+name: ios
+on:
+  workflow_dispatch:
+  push:
+    branches: [ios/ipados]
+jobs:
+  ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: bash ios/build-ipa.sh "$GITHUB_WORKSPACE/dist"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FlowStream-ios-unsigned-ipa
+          path: dist/*.ipa

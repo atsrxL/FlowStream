@@ -10,3 +10,9 @@ __pycache__/
 *.pyc
 .toolchain/
 dist/
+
+# iOS / iPadOS
+ios/FlowStream.xcodeproj/
+ios/.build/
+*.xcuserstate
+xcuserdata/
