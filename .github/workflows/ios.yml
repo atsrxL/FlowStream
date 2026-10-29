@@ -34,7 +34,7 @@ jobs:
             gh release upload "ios-v$V" "$IPA" --clobber -R "$REPO"
           else
             gh release create "ios-v$V" "$IPA" -R "$REPO" --target "$GITHUB_SHA" --prerelease \
-              --title "映流 iOS / iPadOS $V（预发布）" --notes-file ios/RELEASE_NOTES.md
+              --title "映流 iOS / iPadOS ${V}（预发布）" --notes-file ios/RELEASE_NOTES.md
           fi
       - name: Fixed links (ios-latest) + Feather source
         run: |
@@ -44,7 +44,7 @@ jobs:
           git push -f origin refs/tags/ios-latest
           BASE="https://github.com/$REPO/releases/download/ios-latest"
           cat > dist/latest-notes.md <<NOTES
-          固定地址，始终指向 ios/ipados 分支的最新构建（当前 $V，build ${{ github.run_number }}）。
+          固定地址，始终指向 ios/ipados 分支的最新构建（当前 ${V}，build ${{ github.run_number }}）。
 
           - IPA：$BASE/FlowStream-ios.ipa
           - Feather / AltStore 源：$BASE/source.json
