@@ -137,6 +137,8 @@ struct MarksView: View {
     @State private var marks = [MarkedItem]()
     @State private var busy = false
     @State private var alert: String?
+    @State private var pendingDelete: MarkedItem?
+    @State private var notice: String?
 
     var body: some View {
         NavigationStack {
@@ -154,17 +156,59 @@ struct MarksView: View {
                                 }
                             }
                         }.buttonStyle(.plain)
-                        .swipeActions { Button("取消标记", role: .destructive) { Store.shared.removeMarked(mark.serverId, mark.item.path); marks = Store.shared.markedItems() } }
-                        .contextMenu { Button("取消标记", role: .destructive) { Store.shared.removeMarked(mark.serverId, mark.item.path); marks = Store.shared.markedItems() } }
+                        .swipeActions(allowsFullSwipe: false) {
+                            Button("删除文件", role: .destructive) { pendingDelete = mark }.tint(.red)
+                            Button("取消标记") { unmark(mark) }.tint(.orange)
+                        }
+                        .contextMenu {
+                            Button { unmark(mark) } label: { Label("取消标记", systemImage: "bookmark.slash") }
+                            Button(role: .destructive) { pendingDelete = mark } label: { Label("删除文件", systemImage: "trash") }
+                        }
                     }.listStyle(.plain)
                 }
             }
             .overlay { if busy { ProgressView().padding().background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12)) } }
             .navigationTitle("标记")
             .navigationBarTitleDisplayMode(.inline)
-            .alert("无法打开", isPresented: Binding(get: { alert != nil }, set: { if !$0 { alert = nil } })) { Button("好") {} } message: { Text(alert ?? "") }
+            .alert("操作失败", isPresented: Binding(get: { alert != nil }, set: { if !$0 { alert = nil } })) { Button("好") {} } message: { Text(alert ?? "") }
+            .alert("删除这个视频？", isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }), presenting: pendingDelete) { mark in
+                Button("删除", role: .destructive) { delete(mark) }
+                Button("取消", role: .cancel) {}
+            } message: { mark in
+                Text(mark.item.name + "\n将从服务器磁盘删除原文件，不能在本应用内撤销。")
+            }
+            .overlay(alignment: .bottom) {
+                if let notice = notice {
+                    Text(notice).font(.footnote).padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule()).padding(.bottom, 16)
+                        .task { try? await Task.sleep(nanoseconds: 2_000_000_000); self.notice = nil }
+                }
+            }
         }
         .onAppear { marks = Store.shared.markedItems() }
+    }
+
+    private func unmark(_ mark: MarkedItem) {
+        Store.shared.removeMarked(mark.serverId, mark.item.path)
+        marks = Store.shared.markedItems()
+    }
+
+    /// Deletes the original file on the server, then removes the mark.
+    private func delete(_ mark: MarkedItem) {
+        guard !busy else { return }
+        guard let server = Store.shared.server(mark.serverId) else { alert = "标记的来源不可用，请检查服务器设置"; return }
+        busy = true
+        Task {
+            defer { busy = false }
+            do {
+                let source = try Sources.make(server)
+                defer { source.close() }
+                try await source.delete(mark.item.path)
+                Store.shared.removeMarked(mark.serverId, mark.item.path)
+                marks = Store.shared.markedItems()
+                notice = "已从服务器删除 " + mark.item.name
+            } catch { alert = error.localizedDescription }
+        }
     }
 
     private func open(_ mark: MarkedItem) {
@@ -176,7 +220,7 @@ struct MarksView: View {
             defer { busy = false }
             do {
                 let found = try await Sources.browse(server, folder: dir)
-                guard let item = found.first(where: { !$0.directory && $0.path == mark.item.path }) else { throw FlowError("标记的视频已不存在，可左滑取消标记") }
+                guard let item = found.first(where: { !$0.directory && $0.path == mark.item.path }) else { throw FlowError("标记的视频已不存在，可左滑或长按取消标记") }
                 PlayerLauncher.open(server: server, folder: dir, item: item, queue: found)
             } catch { alert = error.localizedDescription }
         }

@@ -1,3 +1,7 @@
+# iOS / iPadOS 0.9.1
+
+中文名改为“映流”；SMB 表单“共享名”改为“路径”（示例 `/share`，可含子目录）；标记页可删除服务器原文件；新增固定下载地址与 Feather 源（`ios-latest`）。
+
 # iOS / iPadOS 0.9.0
 
 新增 `ios/`：SwiftUI + UIKit 原生版，移植九区手势、SMB/WebDAV、预读、标记、删除等 0.9.0 功能；播放器为 AVPlayer，仅 MP4/MOV/M4V/3GP。见 [ios/README.md](ios/README.md)。

@@ -70,7 +70,7 @@ struct SettingsView: View {
                 Section {
                     Text("WebDAV 支持 Basic 认证及匿名访问。iOS 系统播放器原生支持 MP4 / MOV / M4V / 3GP；MKV、WebM、AVI 无法播放。")
                         .font(.footnote).foregroundStyle(.secondary)
-                    Text("FlowStream iOS 0.9.0").font(.footnote).foregroundStyle(.secondary)
+                    Text("FlowStream iOS 0.9.1").font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("设置")
@@ -111,6 +111,7 @@ struct ServerForm: View {
     @Environment(\.dismiss) private var dismiss
     @State var server: Server
     @State private var portText = ""
+    @State private var pathText = ""
     @State private var status = ""
     @State private var busy = false
 
@@ -125,8 +126,12 @@ struct ServerForm: View {
                     Section("SMB") {
                         TextField("主机 IP / 域名", text: $server.host).textInputAutocapitalization(.never).autocorrectionDisabled()
                         TextField("端口", text: $portText).keyboardType(.numberPad)
-                        TextField("共享名", text: $server.share).textInputAutocapitalization(.never).autocorrectionDisabled()
-                        TextField("共享内根目录，可留空", text: $server.rootPath).textInputAutocapitalization(.never).autocorrectionDisabled()
+                        LabeledContent("路径") {
+                            TextField("/share", text: $pathText)
+                                .multilineTextAlignment(.trailing)
+                                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                                .accessibilityIdentifier("smb-path")
+                        }
                         TextField("域 / 工作组，可留空", text: $server.domain).textInputAutocapitalization(.never).autocorrectionDisabled()
                         Toggle("要求 SMB3 传输加密", isOn: $server.encryptSmb)
                     }
@@ -151,13 +156,17 @@ struct ServerForm: View {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("保存") { run(save: true) }.disabled(busy) }
             }
-            .onAppear { portText = String(server.port) }
+            .onAppear { portText = String(server.port); pathText = server.location }
         }
     }
 
     private func prepared() throws -> Server {
         var s = server
-        if s.isSMB { guard let p = Int(portText) else { throw FlowError("端口应在 1–65535 之间") }; s.port = p }
+        if s.isSMB {
+            guard let p = Int(portText) else { throw FlowError("端口应在 1–65535 之间") }
+            s.port = p
+            s.setLocation(pathText)
+        }
         try s.validate()
         return s
     }

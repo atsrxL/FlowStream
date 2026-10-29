@@ -46,7 +46,7 @@ struct Server: Codable, Identifiable, Hashable {
                 throw FlowError("SMB 主机填写 IP / 主机名，不包含 smb:// 或共享名")
             }
             if share.isEmpty || share.contains("/") || share.contains("\\") || share == ".." {
-                throw FlowError("共享名应为单个名称，例如 videos")
+                throw FlowError("路径填写 /共享名，例如 /share 或 /share/电影")
             }
             if port < 1 || port > 65535 { throw FlowError("端口应在 1–65535 之间") }
         } else {
@@ -54,7 +54,16 @@ struct Server: Codable, Identifiable, Hashable {
             if username.contains(":") { throw FlowError("Basic 认证用户名不能含冒号") }
         }
     }
-    var summary: String { isSMB ? "SMB · \(host)/\(share)" : "WebDAV · \(url)" }
+    var summary: String { isSMB ? "SMB · \(host)\(location)" : "WebDAV · \(url)" }
+    /// SMB path as typed in the form: "/share" or "/share/sub/dir". First component is the share name.
+    var location: String {
+        share.isEmpty ? "" : "/" + share + (rootPath.isEmpty ? "" : "/" + rootPath)
+    }
+    mutating func setLocation(_ text: String) {
+        let parts = text.replacingOccurrences(of: "\\", with: "/").split(separator: "/").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        share = parts.first ?? ""
+        rootPath = parts.dropFirst().joined(separator: "/")
+    }
     /// Forward-slash path inside the share, for libsmb2.
     func smbPath(_ relative: String) -> String {
         let p = (try? MediaPaths.normalize(relative)) ?? ""

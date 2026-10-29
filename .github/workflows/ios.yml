@@ -3,14 +3,57 @@ on:
   workflow_dispatch:
   push:
     branches: [ios/ipados]
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: ios-release
+  cancel-in-progress: false
+env:
+  GH_TOKEN: ${{ github.token }}
+  REPO: ${{ github.repository }}
 jobs:
   ipa:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - run: brew install xcodegen
-      - run: bash ios/build-ipa.sh "$GITHUB_WORKSPACE/dist"
+      - name: Build unsigned IPA
+        run: BUILD_NUMBER=${{ github.run_number }} bash ios/build-ipa.sh "$GITHUB_WORKSPACE/dist"
       - uses: actions/upload-artifact@v4
         with:
           name: FlowStream-ios-unsigned-ipa
           path: dist/*.ipa
+      - name: Versioned release (ios-v<version>)
+        run: |
+          V=$(sed -nE 's/^ *MARKETING_VERSION: *"?([^"]+)"?.*/\1/p' ios/project.yml)
+          echo "V=$V" >> "$GITHUB_ENV"
+          IPA="dist/FlowStream-$V-ios-unsigned.ipa"
+          test -f "$IPA"
+          if gh release view "ios-v$V" -R "$REPO" >/dev/null 2>&1; then
+            gh release upload "ios-v$V" "$IPA" --clobber -R "$REPO"
+          else
+            gh release create "ios-v$V" "$IPA" -R "$REPO" --target "$GITHUB_SHA" --prerelease \
+              --title "映流 iOS / iPadOS $V（预发布）" --notes-file ios/RELEASE_NOTES.md
+          fi
+      - name: Fixed links (ios-latest) + Feather source
+        run: |
+          cp "dist/FlowStream-$V-ios-unsigned.ipa" dist/FlowStream-ios.ipa
+          python3 ios/tools/feather_source.py --repo "$REPO" --build "${{ github.run_number }}" > dist/source.json
+          git tag -f ios-latest "$GITHUB_SHA"
+          git push -f origin refs/tags/ios-latest
+          BASE="https://github.com/$REPO/releases/download/ios-latest"
+          cat > dist/latest-notes.md <<NOTES
+          固定地址，始终指向 ios/ipados 分支的最新构建（当前 $V，build ${{ github.run_number }}）。
+
+          - IPA：$BASE/FlowStream-ios.ipa
+          - Feather / AltStore 源：$BASE/source.json
+
+          未签名，需重签后安装。历史版本见 ios-v* 预发布。
+          NOTES
+          if ! gh release view ios-latest -R "$REPO" >/dev/null 2>&1; then
+            gh release create ios-latest -R "$REPO" --prerelease --title "映流 iOS 最新构建（固定地址）" --notes-file dist/latest-notes.md
+          else
+            gh release edit ios-latest -R "$REPO" --prerelease --notes-file dist/latest-notes.md
+          fi
+          gh release upload ios-latest dist/FlowStream-ios.ipa dist/source.json --clobber -R "$REPO"

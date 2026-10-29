@@ -38,7 +38,11 @@ enum PlayerLauncher {
 #if DEBUG
 /// Simulator smoke test: FS_TEST_PROTO=dav|smb FS_TEST_OPEN=<file> pre-configures a server and opens a video.
 enum DebugAutoOpen {
+    private static var done = false
+    /// Once per launch: RootView.onAppear fires again whenever the player is dismissed.
     static func run() {
+        guard !done else { return }
+        done = true
         let env = ProcessInfo.processInfo.environment
         guard let proto = env["FS_TEST_PROTO"] else { return }
         var s = Server()

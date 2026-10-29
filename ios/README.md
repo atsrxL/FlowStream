@@ -1,6 +1,15 @@
-# FlowStream · iOS / iPadOS
+# 映流 FlowStream · iOS / iPadOS
 
 SwiftUI + UIKit 原生版，功能对应 Android 0.9.0：SMB2/3（AMSMB2 / libsmb2）与 WebDAV 来源、九区手势、双指缩放平移、三种适屏、快进／快退长按调速、进度条长按拖动与缩略图预览、上下滑切换、随机、标记、真实删除、下一条预读（磁盘／内存）、画中画、触屏锁。iPhone 与 iPad 通用，最低 iOS 16。
+
+## 下载与 Feather 更新
+
+固定地址，始终是 `ios/ipados` 分支的最新构建（CI 每次推送后自动更新）：
+
+- IPA：https://github.com/atsrxL/FlowStream/releases/download/ios-latest/FlowStream-ios.ipa
+- Feather / AltStore 源：https://github.com/atsrxL/FlowStream/releases/download/ios-latest/source.json
+
+在 Feather 里“添加源”填上面的 source.json，有新版本时会提示更新。发布新版本前把 `ios/project.yml` 的 `MARKETING_VERSION` 加一，并更新 `ios/RELEASE_NOTES.md`；同版本重复推送只会替换 IPA，版本号不变，Feather 不会提示更新。历史版本在 `ios-v*` 预发布里。
 
 ## 构建 IPA（无签名）
 
@@ -18,6 +27,8 @@ bash ios/build-ipa.sh        # 输出 dist/FlowStream-<版本>-ios-unsigned.ipa
 - 小窗是系统画中画；进入播放器锁定当前朝向，用旋转钮切换。
 - 服务器密码存 Keychain；无 Keychain 授权的重签包自动回退到应用私有 UserDefaults。
 - 会话与历史仍只在内存中，标记持久化。
+- 添加 SMB 服务器时只填一个“路径”，例如 `/share` 或 `/share/电影`：第一段是共享名，其余是共享内的起始目录。
+- 标记页左滑或长按可“取消标记”或“删除文件”（删除服务器原文件，需确认）。
 
 ## 测试
 

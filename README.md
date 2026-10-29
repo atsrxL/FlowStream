@@ -58,7 +58,7 @@
 
 APK位于dist/FlowStream-0.3.0-debug.apk，已安装MI 9 Android 15。最新实施与验收见[RESULTS](docs/handoff/RESULTS.md)。下方0.2.0内容保留为原始交接记录。
 
-# 流映 FlowStream · Android 网络媒体播放器
+# 映流 FlowStream · Android 网络媒体播放器
 
 版本：0.2.0 手势与画面缩放更新 · 整理日期：2026-09-11
 

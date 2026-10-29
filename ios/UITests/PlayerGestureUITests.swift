@@ -76,4 +76,69 @@ final class PlayerGestureUITests: XCTestCase {
         p.buttons["媒体信息"].tap(); sleep(1)
         p.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "播放速度")).firstMatch.tap(); sleep(1); shot("26-speed-menu")
     }
+
+    func testServerPathField() throws {
+        let app = XCUIApplication()
+        app.launch()
+        app.tabBars.buttons["设置"].tap()
+        let add = app.buttons["添加服务器"]
+        for _ in 0..<6 where !add.isHittable { app.swipeUp() }
+        add.tap()
+        XCTAssertTrue(app.staticTexts["路径"].waitForExistence(timeout: 3), "SMB form should label the field 路径")
+        XCTAssertFalse(app.textFields["共享名"].exists)
+        let path = app.textFields["smb-path"]
+        XCTAssertEqual(path.placeholderValue, "/share")
+        shot("30-server-form")
+        app.textFields["名称"].tap(); app.textFields["名称"].typeText("路径测试")
+        app.textFields["主机 IP / 域名"].tap(); app.textFields["主机 IP / 域名"].typeText("127.0.0.1")
+        let port = app.textFields["端口"]
+        port.tap(); port.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 5) + "4445")
+        path.tap(); path.typeText("/videos/sub")
+        app.textFields["用户名（匿名访问可留空）"].tap(); app.textFields["用户名（匿名访问可留空）"].typeText("demo")
+        app.secureTextFields["密码"].tap(); app.secureTextFields["密码"].typeText("secret")
+        app.buttons["测试连接"].tap()
+        // /videos/sub contains exactly one video, so the path was split into share "videos" + root "sub".
+        XCTAssertTrue(app.staticTexts["连接成功，项目数：1"].waitForExistence(timeout: 10), "path /videos/sub should list the sub folder")
+        shot("31-server-form-tested")
+    }
+
+    /// Runs last (alphabetical): it removes del.mp4, which testGestures needs.
+    func testZDeleteFromMarks() throws {
+        let fixture = ProcessInfo.processInfo.environment["FS_FIXTURE_DIR"] ?? "/tmp/fsmedia"
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fixture + "/del.mp4"), "fixture del.mp4 missing")
+        let app = XCUIApplication()
+        app.launchEnvironment["FS_TEST_PROTO"] = ProcessInfo.processInfo.environment["FS_TEST_PROTO"] ?? "smb"
+        app.launchEnvironment["FS_TEST_OPEN"] = "del.mp4"
+        app.launch()
+        sleep(9)
+        /// The HUD auto-hides; tap the centre zone (单击 = 菜单开关) until the control is really tappable.
+        func control(_ label: String) -> XCUIElement {
+            let b = app.buttons[label]
+            for _ in 0..<4 where !b.isHittable {
+                app.windows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)).tap(); sleep(1)
+            }
+            return b
+        }
+        // Marks persist across launches; only mark if a previous run has not already done so.
+        _ = control("返回")
+        if !app.buttons["取消标记"].exists { control("标记").tap(); sleep(1) }
+        XCTAssertTrue(app.buttons["取消标记"].exists, "player should show the file as marked")
+        control("返回").tap()
+        XCTAssertTrue(app.tabBars.buttons["标记"].waitForExistence(timeout: 5))
+        sleep(1)
+        app.tabBars.buttons["标记"].tap()
+        let row = app.staticTexts["del.mp4"]
+        XCTAssertTrue(row.waitForExistence(timeout: 3), "marked file should be listed")
+        row.swipeLeft()
+        shot("32-marks-swipe")
+        app.buttons["删除文件"].tap()
+        XCTAssertTrue(app.alerts["删除这个视频？"].waitForExistence(timeout: 3))
+        shot("33-marks-confirm")
+        app.alerts.buttons["删除"].tap()
+        let gone = NSPredicate(format: "exists == false")
+        expectation(for: gone, evaluatedWith: row)
+        waitForExpectations(timeout: 10)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fixture + "/del.mp4"), "file should be deleted on the server")
+        shot("34-marks-after-delete")
+    }
 }
