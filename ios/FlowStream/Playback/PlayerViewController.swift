@@ -31,9 +31,10 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
     private let timelineRow = UIStackView()
     private let titleLabel = UILabel()
     private let hudLabel = PaddedLabel()
-    private let rateLabel = PaddedLabel()
+    private let speedLabel = UILabel()
+    private let titleStack = UIStackView()
     private let spinner = UIActivityIndicatorView(style: .large)
-    private let seekBar = HoldSlider()
+    private let seekBar = ScrubBar()
     private let timeLabel = UILabel()
     private let playButton = UIButton(type: .system)
     private let markButton = UIButton(type: .system)
@@ -52,6 +53,8 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
     private var visibleControls = true
     private var scrubbing = false, gestureScrub = false, scrubResume = false
     private var scrubStart: Int64 = 0, liveScrub: Int64 = 0
+    private var fineScrub = false
+    private static let fineScrubRangeMs: Double = 10_000
     private var pendingScrubSeek: DispatchWorkItem?
     private var hideWork: DispatchWorkItem?
     private var hudWork: DispatchWorkItem?
@@ -201,7 +204,7 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
         ])
 
         // HUD pill + loading
-        for l in [hudLabel, rateLabel] {
+        for l in [hudLabel] {
             l.textColor = .white; l.textAlignment = .center; l.numberOfLines = 2
             l.backgroundColor = UIColor(white: 0, alpha: 0.65)
             l.layer.cornerRadius = 14; l.layer.masksToBounds = true
@@ -209,15 +212,22 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
             l.isHidden = true
         }
         hudLabel.font = .systemFont(ofSize: 17, weight: .medium)
-        rateLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
-        root.addSubview(rateLabel); root.addSubview(hudLabel)
+        root.addSubview(hudLabel)
         spinner.color = .white; spinner.hidesWhenStopped = true
         spinner.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(spinner)
 
         // top bar
         titleLabel.textColor = UIColor(white: 1, alpha: 0.85); titleLabel.font = .systemFont(ofSize: 12)
-        titleLabel.numberOfLines = 2; titleLabel.textAlignment = .center
+        titleLabel.numberOfLines = 1; titleLabel.textAlignment = .center; titleLabel.lineBreakMode = .byTruncatingMiddle
+        // Download speed: always part of the HUD, so it shows and hides with the controls.
+        speedLabel.textColor = .white; speedLabel.textAlignment = .center
+        speedLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        speedLabel.text = "下载 0.0 KB/s"
+        speedLabel.accessibilityIdentifier = "download-speed"
+        titleStack.axis = .vertical; titleStack.alignment = .fill; titleStack.distribution = .fill; titleStack.spacing = 2
+        titleStack.addArrangedSubview(UIView()); titleStack.addArrangedSubview(titleLabel); titleStack.addArrangedSubview(speedLabel); titleStack.addArrangedSubview(UIView())
+        titleStack.arrangedSubviews.first!.heightAnchor.constraint(equalTo: titleStack.arrangedSubviews.last!.heightAnchor).isActive = true
         configure(speedButton, "speedometer", "播放速度")
         speedButton.showsMenuAsPrimaryAction = true
         speedButton.addAction(UIAction { [weak self] _ in self?.gestures.cancelGesture(); self?.hideWork?.cancel() }, for: .menuActionTriggered)
@@ -226,7 +236,7 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
         topBar.axis = .horizontal; topBar.distribution = .fill; topBar.alignment = .fill
         let close = symbolButton("chevron.down", "返回") { [weak self] in self?.back() }
         let rotate = symbolButton("rotate.right", "旋转") { [weak self] in self?.rotate() }
-        for (v, w) in [(close, 1.0), (rotate, 1.0), (titleLabel, 2.0), (pipBtn, 1.0), (speedButton, 1.0)] as [(UIView, CGFloat)] {
+        for (v, w) in [(close, 1.0), (rotate, 1.0), (titleStack, 2.0), (pipBtn, 1.0), (speedButton, 1.0)] as [(UIView, CGFloat)] {
             topBar.addArrangedSubview(v)
             if v !== close { v.widthAnchor.constraint(equalTo: close.widthAnchor, multiplier: w).isActive = true }
         }
@@ -262,6 +272,7 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
         root.lockButton = lockButton
         timeLabel.textColor = .white; timeLabel.font = .monospacedDigitSystemFont(ofSize: 10, weight: .regular)
         timeLabel.numberOfLines = 2; timeLabel.textAlignment = .center; timeLabel.text = "00:00\n--:--"
+        timeLabel.accessibilityIdentifier = "time-label"
         timelineRow.axis = .horizontal; timelineRow.alignment = .fill; timelineRow.distribution = .fill
         timelineRow.addArrangedSubview(lockButton); timelineRow.addArrangedSubview(seekBar); timelineRow.addArrangedSubview(timeLabel)
         lockButton.widthAnchor.constraint(equalToConstant: 48).isActive = true
@@ -286,6 +297,7 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
         infoLabel.backgroundColor = UIColor(white: 0.12, alpha: 0.95); infoLabel.layer.cornerRadius = 14; infoLabel.layer.masksToBounds = true
         infoLabel.insets = UIEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
         infoLabel.isHidden = true; infoLabel.isUserInteractionEnabled = true
+        infoLabel.accessibilityIdentifier = "media-info"
         infoLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dismissInfo)))
         infoLabel.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(infoLabel)
@@ -309,7 +321,6 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
             menuStack.bottomAnchor.constraint(equalTo: timelineRow.topAnchor),
             hudLabel.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 8), hudLabel.centerXAnchor.constraint(equalTo: root.centerXAnchor),
             hudLabel.widthAnchor.constraint(lessThanOrEqualTo: root.widthAnchor, constant: -40),
-            rateLabel.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 8), rateLabel.centerXAnchor.constraint(equalTo: root.centerXAnchor),
             spinner.centerXAnchor.constraint(equalTo: root.centerXAnchor), spinner.centerYAnchor.constraint(equalTo: root.centerYAnchor),
             previewImage.widthAnchor.constraint(equalToConstant: 160), previewImage.heightAnchor.constraint(equalToConstant: 90),
             previewImage.centerXAnchor.constraint(equalTo: root.centerXAnchor), previewImage.bottomAnchor.constraint(equalTo: previewTime.topAnchor, constant: -4),
@@ -349,7 +360,7 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
     private var inPip: Bool { pipActive }
     private func openCurrent(position: Int64, playing: Bool) {
         clearPreviews()
-        transform.setPreset(store.sourcePreset(server.id)); transform.newVideo(); applyTransform()
+        transform.setPreset(0); transform.newVideo(); applyTransform()   // every new video starts at 宽度适屏
         syncRandom(); randomOrder.visit(session.current.path)
         errorBox.isHidden = true
         let item = session.current
@@ -476,8 +487,7 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
         else if now.timeIntervalSince(rateAt) >= 0.5 {
             loadRate = Double(max(0, bytes - rateBytes)) / now.timeIntervalSince(rateAt); rateAt = now; rateBytes = bytes
         }
-        rateLabel.text = "加载 · " + Fmt.rate(loadRate)
-        rateLabel.isHidden = !(buffering && !inPip && hudLabel.isHidden)
+        speedLabel.text = "下载 " + Fmt.rate(loadRate)
         guard player.currentItem != nil else { return }
         let duration = durationMs, position = positionMs
         if !scrubbing {
@@ -668,7 +678,7 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
             let ahead = buffered.map { max(0, $0.end.seconds - player.currentTime().seconds) } ?? 0
             text += "\n播放速度  " + SpeedScale.label(trick.baseSpeed) + "\n缓冲  " + Fmt.time(Int64(ahead * 1000))
             text += "\n本次平均接收  " + Fmt.bytes(Int64(Double(bytes) / elapsed)) + "/s（含预读）\n下一条预读  \(store.preloadMb) MB\n画面  " + transform.label
-            infoLabel.text = text; infoLabel.isHidden = false
+            infoLabel.text = text; infoLabel.accessibilityLabel = text; infoLabel.isHidden = false
         }
     }
     private func fourCC(_ v: FourCharCode) -> String {
@@ -695,26 +705,39 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
         gestureScrub = false
         cancelScrub(); checkpoint(); showControls()
     }
-    func gmScrubStarted() {
+    func gmScrubStarted(fine: Bool) {
         guard durationMs > 0 else { return }
-        scrubbing = true; gestureScrub = true
+        scrubbing = true; gestureScrub = true; fineScrub = fine
         scrubStart = positionMs; liveScrub = scrubStart; scrubResume = trick.playWhenReady
         player.pause(); hideWork?.cancel()
     }
     func gmScrubMoved(totalDx: Float, width: Float) {
         guard scrubbing, gestureScrub else { return }
         let d = durationMs
-        liveScrub = max(0, min(d - 1, scrubStart + Int64((Double(totalDx) / Double(max(1, width)) * Double(d)).rounded())))
+        let offset: Double
+        if fineScrub {
+            // Half the screen width = 10 s either side of where the drag started.
+            let t = max(-1, min(1, Double(totalDx) / Double(max(1, width / 2))))
+            offset = (t * Self.fineScrubRangeMs).rounded()
+        } else {
+            offset = (Double(totalDx) / Double(max(1, width)) * Double(d)).rounded()
+        }
+        liveScrub = max(0, min(d - 1, scrubStart + Int64(offset)))
         seekBar.progress = CGFloat(Double(liveScrub) / Double(d))
         timeLabel.text = Fmt.time(liveScrub) + "\n" + Fmt.time(d)
         showPreview(liveScrub)
+        if fineScrub {
+            let delta = Double(liveScrub - scrubStart) / 1000
+            persistentHint(String(format: "精细 %@%.1f 秒\n", delta >= 0 ? "+" : "−", abs(delta)) + Fmt.time(liveScrub) + " / " + Fmt.time(d))
+        }
         if pendingScrubSeek == nil {
             let w = DispatchWorkItem { [weak self] in
                 guard let self = self else { return }
                 self.pendingScrubSeek = nil
-                if self.scrubbing && self.gestureScrub {
-                    self.player.seek(to: CMTime(value: self.liveScrub, timescale: 1000), toleranceBefore: .positiveInfinity, toleranceAfter: .positiveInfinity)
-                }
+                guard self.scrubbing && self.gestureScrub else { return }
+                // Fine scrubbing needs exact frames; a keyframe could be several seconds away.
+                let tol: CMTime = self.fineScrub ? .zero : .positiveInfinity
+                self.player.seek(to: CMTime(value: self.liveScrub, timescale: 1000), toleranceBefore: tol, toleranceAfter: tol)
             }
             pendingScrubSeek = w
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: w)
@@ -755,7 +778,7 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
         if previewTarget < 0 { previewTarget = target; updateControlsVisibility(animated: false) }
         previewTarget = target
         previewTime.isHidden = false
-        persistentHint(Fmt.time(target) + " / " + Fmt.time(durationMs))
+        if !(gestureScrub && fineScrub) { persistentHint(Fmt.time(target) + " / " + Fmt.time(durationMs)) }
         renderPreview()
         if let n = nearestPreview(target), abs(n.0 - target) < 400 { return }
         if pendingPreview == nil {
@@ -845,7 +868,6 @@ final class PlayerViewController: UIViewController, GestureViewOutput, AVPicture
         }
     }
     private func fitChanged() {
-        store.setSourcePreset(server.id, transform.presetIndex)
         flash(transform.label); showControls()
     }
     func gmPan(dx: Float, dy: Float) {

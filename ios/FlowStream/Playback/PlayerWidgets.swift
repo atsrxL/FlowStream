@@ -41,68 +41,74 @@ final class PaddedLabel: UILabel {
     }
 }
 
-/// A seek bar that ignores short taps. A long press starts tracking; drag to a position, release to commit.
-final class HoldSlider: UIView {
+/// Seek bar: put a finger on it and drag; tracking starts on the first few points of movement, no hold delay.
+/// A tap without movement does nothing. No thumb: white = played, grey = remaining.
+final class ScrubBar: UIView {
     var progress: CGFloat = 0 { didSet { setNeedsLayout() } }
     var isSeekable = true
     var onBegin: (() -> Void)?
     var onChange: ((CGFloat) -> Void)?
     var onEnd: ((CGFloat, Bool) -> Void)?
     private(set) var tracking = false
-    private let track = CALayer(), fill = CALayer(), thumb = CALayer()
-    private lazy var press: UILongPressGestureRecognizer = {
-        let r = UILongPressGestureRecognizer(target: self, action: #selector(pressed(_:)))
-        r.minimumPressDuration = 0.25; r.allowableMovement = 10_000
-        return r
-    }()
+    private let track = CALayer(), fill = CALayer()
+    private weak var touch: UITouch?
+    private var startX: CGFloat = 0
+    private static let pad: CGFloat = 10
+    private static let startDistance: CGFloat = 3
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         track.backgroundColor = UIColor(white: 1, alpha: 0.3).cgColor
         fill.backgroundColor = UIColor.white.cgColor
-        thumb.backgroundColor = UIColor.white.cgColor
-        [track, fill, thumb].forEach { layer.addSublayer($0) }
-        addGestureRecognizer(press)
+        [track, fill].forEach { layer.addSublayer($0) }
+        isMultipleTouchEnabled = false
         isAccessibilityElement = true
-        accessibilityLabel = "长按后拖动播放进度并预览缩略图"
+        accessibilityLabel = "播放进度，按住拖动调整"
     }
     required init?(coder: NSCoder) { fatalError() }
+
     override func layoutSubviews() {
         super.layoutSubviews()
         let h: CGFloat = tracking ? 6 : 3
-        let pad: CGFloat = 10
-        let w = bounds.width - pad * 2
-        CATransaction.begin(); CATransaction.setDisableActions(true)
-        track.frame = CGRect(x: pad, y: bounds.midY - h / 2, width: w, height: h); track.cornerRadius = h / 2
+        let w = bounds.width - Self.pad * 2
         let p = max(0, min(1, progress))
-        fill.frame = CGRect(x: pad, y: bounds.midY - h / 2, width: w * p, height: h); fill.cornerRadius = h / 2
-        let d: CGFloat = tracking ? 18 : 12
-        thumb.frame = CGRect(x: pad + w * p - d / 2, y: bounds.midY - d / 2, width: d, height: d); thumb.cornerRadius = d / 2
+        CATransaction.begin(); CATransaction.setDisableActions(true)
+        track.frame = CGRect(x: Self.pad, y: bounds.midY - h / 2, width: w, height: h); track.cornerRadius = h / 2
+        fill.frame = CGRect(x: Self.pad, y: bounds.midY - h / 2, width: w * p, height: h); fill.cornerRadius = h / 2
         CATransaction.commit()
     }
-    private func value(_ p: CGPoint) -> CGFloat {
-        let pad: CGFloat = 10
-        return max(0, min(1, (p.x - pad) / max(1, bounds.width - pad * 2)))
+    private func value(_ x: CGFloat) -> CGFloat {
+        max(0, min(1, (x - Self.pad) / max(1, bounds.width - Self.pad * 2)))
     }
-    @objc private func pressed(_ g: UILongPressGestureRecognizer) {
-        switch g.state {
-        case .began:
-            guard isSeekable else { g.isEnabled = false; g.isEnabled = true; return }
-            tracking = true; progress = value(g.location(in: self)); onBegin?(); onChange?(progress)
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        case .changed:
-            guard tracking else { return }
-            progress = value(g.location(in: self)); onChange?(progress)
-        case .ended:
-            guard tracking else { return }
-            tracking = false; setNeedsLayout(); onEnd?(progress, true)
-        case .cancelled, .failed:
-            if tracking { tracking = false; setNeedsLayout(); onEnd?(progress, false) }
-        default: break
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard touch == nil, let t = touches.first else { return }
+        touch = t; startX = t.location(in: self).x
+    }
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let t = touch, touches.contains(t) else { return }
+        let x = t.location(in: self).x
+        if !tracking {
+            guard isSeekable, abs(x - startX) >= Self.startDistance else { return }
+            tracking = true; setNeedsLayout()
+            progress = value(x); onBegin?(); onChange?(progress)
+            UISelectionFeedbackGenerator().selectionChanged()
+            return
         }
+        progress = value(x); onChange?(progress)
+    }
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let t = touch, touches.contains(t) else { return }
+        touch = nil
+        if tracking { tracking = false; setNeedsLayout(); onEnd?(progress, true) }
+    }
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let t = touch, touches.contains(t) else { return }
+        touch = nil
+        if tracking { tracking = false; setNeedsLayout(); onEnd?(progress, false) }
     }
     func cancelTracking() {
+        touch = nil
         guard tracking else { return }
         tracking = false; setNeedsLayout()
-        press.isEnabled = false; press.isEnabled = true
     }
 }

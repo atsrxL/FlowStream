@@ -70,7 +70,7 @@ struct SettingsView: View {
                 Section {
                     Text("WebDAV 支持 Basic 认证及匿名访问。iOS 系统播放器原生支持 MP4 / MOV / M4V / 3GP；MKV、WebM、AVI 无法播放。")
                         .font(.footnote).foregroundStyle(.secondary)
-                    Text("FlowStream iOS 0.9.1").font(.footnote).foregroundStyle(.secondary)
+                    Text("FlowStream iOS 0.9.2").font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("设置")
@@ -82,28 +82,6 @@ struct SettingsView: View {
     }
     private func reloadServers() {
         servers = store.servers(); active = store.activeServer
-    }
-}
-
-struct GestureSettings: View {
-    @State private var refresh = 0
-    var body: some View {
-        Form {
-            ForEach(0..<9, id: \.self) { zone in
-                Section(GestureBindings.zoneNames[zone]) {
-                    ForEach(GestureBindings.kinds, id: \.0) { kind, title in
-                        Picker(title, selection: Binding(
-                            get: { Store.shared.gestureAction(zone, kind) },
-                            set: { Store.shared.setGestureAction(zone, kind, $0); refresh += 1 })) {
-                            ForEach(GestureBindings.actions(kind), id: \.self) { Text(GestureBindings.label($0)).tag($0) }
-                        }
-                    }
-                }
-            }
-        }
-        .id(refresh)
-        .navigationTitle("九宫格手势")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

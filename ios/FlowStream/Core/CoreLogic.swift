@@ -61,7 +61,7 @@ enum GestureBindings {
         switch kind {
         case "tap", "double": return ["none", "hud", "play", "fit", "seek_back_1", "seek_forward_1"]
         case "hold": return ["none", "reverse", "forward"]
-        default: return ["none", "scrub"]
+        default: return ["none", "scrub", "fine_scrub"]
         }
     }
     static func defaultAction(_ zone: Int, _ kind: String) -> String {
@@ -84,9 +84,25 @@ enum GestureBindings {
         case "reverse": return "快退调速"
         case "forward": return "快进调速"
         case "scrub": return "调整播放进度"
+        case "fine_scrub": return "精细进度调整（±10 秒）"
         case "seek_back_1": return "后退 1 秒"
         case "seek_forward_1": return "前进 1 秒"
         default: return "无操作"
+        }
+    }
+    /// Two-character labels for the phone diagram on the gesture settings page.
+    static func shortLabel(_ action: String) -> String {
+        switch action {
+        case "hud": return "菜单"
+        case "play": return "播放"
+        case "fit": return "适屏"
+        case "reverse": return "快退"
+        case "forward": return "快进"
+        case "scrub": return "进度"
+        case "fine_scrub": return "微调"
+        case "seek_back_1": return "−1秒"
+        case "seek_forward_1": return "+1秒"
+        default: return "无"
         }
     }
     static let zoneNames = ["上左", "上中", "上右", "中左", "中央", "中右", "下左", "下中", "下右"]
@@ -278,7 +294,8 @@ final class TapResolver {
 protocol GestureMachineOutput: AnyObject {
     func gmTap()
     func gmPan(dx: Float, dy: Float)
-    func gmScrubStarted()
+    /// fine: 精细进度调整, the drag maps to ±10 s around the starting position.
+    func gmScrubStarted(fine: Bool)
     func gmScrubMoved(totalDx: Float, width: Float)
     func gmScrubEnded(commit: Bool)
     func gmSwitchVideo(_ delta: Int)
@@ -346,9 +363,9 @@ final class GestureMachine {
                 if abs(dy) >= slop && abs(dy) >= Self.axisRatio * abs(dx) {
                     mode = .vertical
                 } else if abs(dx) >= slop && abs(dx) >= Self.axisRatio * abs(dy) {
-                    if zoneDrag[zone] == "scrub" {
+                    if zoneDrag[zone] == "scrub" || zoneDrag[zone] == "fine_scrub" {
                         mode = .scrub
-                        out?.gmScrubStarted()
+                        out?.gmScrubStarted(fine: zoneDrag[zone] == "fine_scrub")
                         out?.gmScrubMoved(totalDx: dx, width: width)
                     } else { mode = .rejected }
                 } else if maxTravel > slop * 2.5 {

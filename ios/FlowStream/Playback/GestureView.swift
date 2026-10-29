@@ -160,7 +160,7 @@ final class GestureView: UIView, GestureMachineOutput {
     // MARK: GestureMachineOutput adapter
     func gmTap() { tapEligible = true }   // only a candidate, never an immediate pause
     func gmPan(dx: Float, dy: Float) { output?.gmPan(dx: dx, dy: dy) }
-    func gmScrubStarted() { cancelTaps(); output?.gmScrubStarted() }
+    func gmScrubStarted(fine: Bool) { cancelTaps(); output?.gmScrubStarted(fine: fine) }
     func gmScrubMoved(totalDx: Float, width: Float) { output?.gmScrubMoved(totalDx: totalDx, width: width) }
     func gmScrubEnded(commit: Bool) { output?.gmScrubEnded(commit: commit) }
     func gmSwitchVideo(_ delta: Int) { output?.gmSwitchVideo(delta) }

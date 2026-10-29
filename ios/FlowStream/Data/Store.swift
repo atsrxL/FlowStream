@@ -211,6 +211,9 @@ final class Store {
     func gestureAction(_ zone: Int, _ kind: String) -> String {
         GestureBindings.normalize(zone, kind, d.string(forKey: "gesture9.\(zone / 3).\(zone % 3).\(kind)") ?? GestureBindings.defaultAction(zone, kind))
     }
+    func resetGestures() {
+        for z in 0..<GestureBindings.count { for (k, _) in GestureBindings.kinds { d.removeObject(forKey: "gesture9.\(z / 3).\(z % 3).\(k)") } }
+    }
     func setGestureAction(_ zone: Int, _ kind: String, _ action: String) {
         d.set(GestureBindings.normalize(zone, kind, action), forKey: "gesture9.\(zone / 3).\(zone % 3).\(kind)")
     }
