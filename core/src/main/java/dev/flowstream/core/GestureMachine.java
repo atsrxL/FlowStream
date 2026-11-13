@@ -6,7 +6,7 @@ public final class GestureMachine {
     public interface Output {
         void tap();
         default void pan(float dxDp, float dyDp) {}
-        default void scrubStarted() {}
+        default void scrubStarted(boolean fine) {}
         default void scrubMoved(float totalDxDp, float widthDp) {}
         default void scrubEnded(boolean commit) {}
         void switchVideo(int delta); // +1 next, -1 previous
@@ -80,9 +80,9 @@ public final class GestureMachine {
                 if (Math.abs(dy) >= slop && Math.abs(dy) >= AXIS_RATIO * Math.abs(dx)) {
                     mode = Mode.VERTICAL;
                 } else if (Math.abs(dx) >= slop && Math.abs(dx) >= AXIS_RATIO * Math.abs(dy)) {
-                    if ("scrub".equals(zoneDrag[zone])) {
+                    if ("scrub".equals(zoneDrag[zone]) || "scrub_fine".equals(zoneDrag[zone])) {
                         mode = Mode.SCRUB;
-                        out.scrubStarted();
+                        out.scrubStarted("scrub_fine".equals(zoneDrag[zone]));
                         out.scrubMoved(dx, width);
                     } else mode = Mode.REJECTED;
                 } else if (maxTravel > slop * 2.5f) {

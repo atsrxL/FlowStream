@@ -55,10 +55,6 @@ public final class Store extends SQLiteOpenHelper {
     public float globalSpeed() { return SpeedScale.normalize(prefs.getFloat("global_speed",1f)); }
     public void setGlobalSpeed(float value) { prefs.edit().putFloat("global_speed",SpeedScale.normalize(value)).apply(); }
     public float sourceSpeed(String id) { return globalSpeed(); }
-    public int sourcePreset(String id){return Math.max(0,Math.min(2,prefs.getInt("preset."+id,prefs.getBoolean("native."+id,false)?2:0)));}
-    public void saveSourcePreset(String id,int preset){prefs.edit().putInt("preset."+id,preset).putBoolean("native."+id,preset==2).apply();}
-    public boolean sourceNative(String id) { return prefs.getBoolean("native."+id,false); }
-    public void saveSourcePlayback(String id,float speed,boolean nativeSize) { prefs.edit().putFloat("global_speed",SpeedScale.normalize(speed)).putBoolean("native."+id,nativeSize).apply(); }
     public String theme(){return prefs.getString("theme","system");}
     public void setTheme(String value){prefs.edit().putString("theme",value).apply();}
     @Override public void onOpen(SQLiteDatabase db){super.onOpen(db);db.delete("sessions",null,null);prefs.edit().remove("bookmarks").apply();}
@@ -127,6 +123,15 @@ public final class Store extends SQLiteOpenHelper {
         if(current.equals(path)){s.index=Math.min(before,s.queue.size()-1);s.position=s.duration=0;}
         else{for(int i=0;i<s.queue.size();i++)if(s.queue.get(i).path.equals(current)){s.index=i;break;}}
         return session(id);
+    }
+    /** Removes a deleted server file from every active queue and its saved mark. */
+    public synchronized void removeMediaForSource(String serverId,String path)throws IOException{
+        String normalized=MediaPaths.normalize(path);
+        for(String id:new ArrayList<>(activeSessions.keySet())){
+            Session s=activeSessions.get(id);
+            if(s.serverId.equals(serverId))removeMedia(id,normalized);
+        }
+        removeMarked(serverId,normalized);
     }
     public synchronized void deleteSession(String id){activeSessions.remove(id);}
 }

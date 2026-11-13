@@ -22,7 +22,7 @@ public final class VideoTransformController {
     }
     public boolean inspectAt(float x,float y){return inspectMode();}
     public void onVideoSize(VideoSize size){viewport.setVideoSize(size.width,size.height,size.pixelWidthHeightRatio);if(!inspectMode())viewport.preset(preset);apply();}
-    public void newVideo(){viewport.clearVideo();viewport.preset(preset);apply();}
+    public void newVideo(){preset=VideoViewport.Mode.WIDTH;viewport.clearVideo();viewport.preset(preset);apply();}
     public void resetFit(){setPreset(0);}
     public void setPreset(int which){preset=which==1?VideoViewport.Mode.HEIGHT:which==2?VideoViewport.Mode.NATIVE:VideoViewport.Mode.WIDTH;viewport.preset(preset);apply();}
     public int presetIndex(){return preset==VideoViewport.Mode.HEIGHT?1:preset==VideoViewport.Mode.NATIVE?2:0;}

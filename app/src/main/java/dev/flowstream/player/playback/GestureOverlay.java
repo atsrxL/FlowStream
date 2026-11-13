@@ -52,7 +52,7 @@ public final class GestureOverlay extends View {
         machine = new GestureMachine(new GestureMachine.Output() {
             @Override public void tap() { tapEligible = true; } // Only a candidate, never immediate pause.
             @Override public void pan(float dx, float dy) { output.panPixels(dx * density, dy * density); }
-            @Override public void scrubStarted(){cancelTaps();output.scrubStarted();}
+            @Override public void scrubStarted(boolean fine){cancelTaps();output.scrubStarted(fine);}
             @Override public void scrubMoved(float dx,float width){output.scrubMoved(dx,width);}
             @Override public void scrubEnded(boolean commit){output.scrubEnded(commit);}
             @Override public void switchVideo(int delta) { output.switchVideo(delta); }

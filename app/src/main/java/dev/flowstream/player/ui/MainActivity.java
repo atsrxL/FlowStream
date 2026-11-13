@@ -26,6 +26,8 @@ public final class MainActivity extends BackActivity {
     private boolean showingMarks;
     private List<MarkedItem> markedEntries=new ArrayList<>();
     private Map<String,Server> markedSources=new HashMap<>();
+    private static final Set<String> deletingMarks=java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private boolean resumed;
 
     private int generation;
     private List<RemoteItem> entries = new ArrayList<>();
@@ -57,7 +59,7 @@ public final class MainActivity extends BackActivity {
         empty.setGravity(Gravity.CENTER); Ui.pad(empty,24); content.addView(empty,new FrameLayout.LayoutParams(-1,-1)); list.setEmptyView(empty);
         root.addView(content,new LinearLayout.LayoutParams(-1,0,1)); root.addView(tabs,new LinearLayout.LayoutParams(-1,Ui.dp(this,70)));setContentView(root); Ui.safeInsets(this,root);Ui.systemBars(this);
         list.setOnItemClickListener((p,v,pos,id)->open(pos));
-        list.setOnItemLongClickListener((p,v,pos,id)->{if(!showingMarks||pos>=markedEntries.size())return false;MarkedItem mark=markedEntries.get(pos);new AlertDialog.Builder(this).setTitle("取消标记？").setMessage(mark.item.name).setNegativeButton("取消",null).setPositiveButton("取消标记",(d,w)->{app.store.removeMarked(mark.serverId,mark.item.path);reload();}).show();return true;});
+        list.setOnItemLongClickListener((p,v,pos,id)->{if(!showingMarks||pos>=markedEntries.size())return false;if(progress.getVisibility()==View.VISIBLE)return true;markedActions(markedEntries.get(pos));return true;});
     }
     private void addNavigation(LinearLayout row,String icon,String label,Runnable action){
         LinearLayout col=Ui.column(this);col.setGravity(Gravity.CENTER);Button button=new IconButton(this,icon,label,action);button.setTextColor(label.equals("文件")?0xff0784ff:Ui.fg(this));col.addView(button,new LinearLayout.LayoutParams(Ui.dp(this,44),Ui.dp(this,42)));TextView text=Ui.text(this,label,11,Ui.muted(this));text.setGravity(Gravity.CENTER);col.addView(text);col.setOnClickListener(v->action.run());row.addView(col,new LinearLayout.LayoutParams(0,-1,1));
@@ -68,7 +70,8 @@ public final class MainActivity extends BackActivity {
         LinearLayout text=Ui.column(this);text.setPadding(Ui.dp(this,12),0,0,0);TextView name=Ui.text(this,item.name,15,Ui.fg(this));name.setMaxLines(2);name.setEllipsize(android.text.TextUtils.TruncateAt.END);text.addView(name);TextView info=Ui.text(this,detail,12,0xff919197);info.setPadding(0,Ui.dp(this,5),0,0);text.addView(info);row.addView(text,new LinearLayout.LayoutParams(0,-2,1));
         if(!item.directory&&source!=null){final int token=generation;app.thumbnails.load(source,item,b->{if(!stale(token)&&b!=null)image.setImageBitmap(b);});}return row;
     }
-    @Override protected void onResume(){super.onResume();randomToggle.setChecked(app.store.randomMode());thumbnailsToggle.setText(app.store.thumbnailMode()?"▧ 缩略图":"☰ 列表");reload();}
+    @Override protected void onResume(){super.onResume();resumed=true;randomToggle.setChecked(app.store.randomMode());thumbnailsToggle.setText(app.store.thumbnailMode()?"▧ 缩略图":"☰ 列表");reload();}
+    @Override protected void onPause(){resumed=false;super.onPause();}
     private void reload(){
         if(showingMarks){reloadMarks();return;}
         final int token=++generation; progress.setVisibility(View.VISIBLE); empty.setText("正在读取…");
@@ -87,17 +90,57 @@ public final class MainActivity extends BackActivity {
         });
     }
     private void reloadMarks(){
-        final int token=++generation;progress.setVisibility(View.VISIBLE);heading.setText("标记");path.setText("所有来源 · 长按取消标记");
+        final int token=++generation;progress.setVisibility(View.VISIBLE);heading.setText("标记");path.setText("所有来源 · 长按取消标记或删除文件");
         app.disk.execute(()->{List<MarkedItem> marks=app.store.markedItems();Map<String,Server> sources=new HashMap<>();for(MarkedItem mark:marks){if(sources.containsKey(mark.serverId))continue;try{sources.put(mark.serverId,app.store.server(mark.serverId));}catch(Exception ignored){}}
             app.main.post(()->{if(stale(token))return;markedEntries=marks;markedSources=sources;entries=new ArrayList<>();for(MarkedItem mark:marks)entries.add(mark.item);progress.setVisibility(View.GONE);showRows();});
         });
     }
     private void openMarked(int pos){
         if(pos>=markedEntries.size())return;final MarkedItem mark=markedEntries.get(pos);final Server source=markedSources.get(mark.serverId);if(source==null){Ui.toast(this,"标记的来源不可用，请检查服务器设置");return;}
+        if(deletingMarks.contains(markKey(mark))){Ui.toast(this,"正在删除，请稍候");return;}
         final int token=++generation;progress.setVisibility(View.VISIBLE);final String dir=MediaPaths.parent(mark.item.path);
         app.io.execute(()->{try{List<RemoteItem> found=Browsers.list(source,dir);ArrayList<RemoteItem> queue=new ArrayList<>();int chosen=-1;for(RemoteItem item:found)if(!item.directory){if(item.path.equals(mark.item.path))chosen=queue.size();queue.add(item);}if(chosen<0)throw new java.io.IOException("标记的视频已不存在，可长按取消标记");final int index=chosen;
             app.disk.execute(()->{try{String id=app.store.newSession(source,dir,queue,index);app.main.post(()->{if(stale(token))return;progress.setVisibility(View.GONE);launch(id);});}catch(Exception e){markedOpenFailed(token,e);}});
         }catch(Exception e){markedOpenFailed(token,e);}});
+    }
+    private String markKey(MarkedItem mark){return mark.serverId+"\n"+mark.item.path;}
+    private void markedActions(MarkedItem mark){
+        if(deletingMarks.contains(markKey(mark))){Ui.toast(this,"正在删除，请稍候");return;}
+        final int token=generation;
+        new AlertDialog.Builder(this).setTitle(mark.item.name).setItems(new String[]{"取消标记","删除文件"},(d,which)->{
+            if(stale(token)||!resumed||!showingMarks)return;
+            if(which==0){app.store.removeMarked(mark.serverId,mark.item.path);reload();return;}
+            if(markedSources.get(mark.serverId)==null){Ui.toast(this,"标记的来源不可用，请检查服务器设置");return;}
+            new AlertDialog.Builder(this).setTitle("删除这个视频？").setMessage(mark.item.name+"\n将从服务器磁盘删除原文件，不能在本应用内撤销。")
+                .setNegativeButton("取消",null).setPositiveButton("删除",(dialog,w)->{if(!stale(token)&&resumed&&showingMarks)deleteMarked(mark);}).show();
+        }).setNegativeButton("取消",null).show();
+    }
+    private void deleteMarked(MarkedItem mark){
+        final String key=markKey(mark);
+        if(!deletingMarks.add(key)){Ui.toast(this,"正在删除，请稍候");return;}
+        final int token=++generation;progress.setVisibility(View.VISIBLE);
+        // Resolve the current source on disk, rather than deleting through a stale list snapshot.
+        app.disk.execute(()->{
+            final Server source;
+            try{source=app.store.server(mark.serverId);}catch(Exception e){markedDeleteFailed(token,key,e);return;}
+            app.io.execute(()->{
+                try{Browsers.deleteVideo(source,mark.item);}catch(Exception e){markedDeleteFailed(token,key,e);return;}
+                app.disk.execute(()->{
+                    String notice="已从服务器删除 "+mark.item.name;
+                    try{app.store.removeMediaForSource(mark.serverId,mark.item.path);}
+                    catch(Exception e){notice="服务器文件已删除，本地记录清理失败："+Ui.error(e);}
+                    final String message=notice;
+                    app.thumbnails.clear(()->{
+                        deletingMarks.remove(key);
+                        if(stale(token)||!resumed)return;
+                        reload();Ui.toast(this,message);
+                    });
+                });
+            });
+        });
+    }
+    private void markedDeleteFailed(int token,String key,Exception error){
+        app.main.post(()->{deletingMarks.remove(key);if(stale(token)||!resumed)return;progress.setVisibility(View.GONE);Ui.toast(this,Ui.error(error));});
     }
     private void markedOpenFailed(int token,Exception error){app.main.post(()->{if(stale(token))return;progress.setVisibility(View.GONE);Ui.toast(this,Ui.error(error));});}
     private boolean stale(int token){return token!=generation || isDestroyed() || isFinishing();}

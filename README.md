@@ -1,3 +1,17 @@
+# 映流 FlowStream · Android 0.9.2
+
+同步 iOS / iPadOS 0.9.1–0.9.2：SMB 单路径表单、标记页删除服务器文件、每条视频重置宽度适屏、HUD 常驻下载速度、手机图示九区设置、即时拖动无圆点进度条及可选 ±10 秒精细调节。保留 Android Media3 的原有格式支持。
+
+- [Android 0.9.2 APK](https://github.com/atsrxL/FlowStream/releases/download/v0.9.2/FlowStream-0.9.2-debug.apk)
+- [Android 固定下载地址](https://github.com/atsrxL/FlowStream/releases/download/android-latest/FlowStream-android.apk)
+- [iOS / iPadOS 下载与安装](ios/README.md) · [当前交互](docs/GESTURES.md)
+
+Android 安装包沿用 `dev.flowstream.player.debug` 和既有 Debug 证书，`versionCode=16`；可覆盖同签名旧版，无需卸载。固定地址在发布时更新；iOS 的 Feather / AltStore 源不适用于 Android。
+
+已在 MS-A2 VM301 编译：核心120组通过，lint 0错误／36警告；MI 9（Android 15）覆盖升级和上述关键交互已验证。APK 9,920,821字节，SHA-256：`d19ad96c888a23997039e9cd97007272b3511e43733deb28dc466bc72c437be1`。
+
+以下保留 Android 历史版本记录与早期设计边界；当前交互以 0.9.2 及 `docs/GESTURES.md` 为准。
+
 # FlowStream 0.9.0 · 九区手势与缓存设置
 
 按最新版《映流.ods》实现九区动作、1–10秒HUD、50MB–3GB视频预读及缓存清理，并补全原ODS遗漏功能。
@@ -162,14 +176,13 @@ Android 构建和 lint 尚未在本环境运行，首轮构建可能暴露依赖
 名称：家中 NAS
 主机：192.168.1.20
 端口：445
-共享名：videos
-共享内根目录：电影        # 可留空；不是服务器上的绝对挂载路径
+路径：/videos/电影        # /共享名/共享内起始目录，子目录可省略
 用户名：你的只读账号
 密码：该账号的密码
 域 / 工作组：按服务器要求填写，可留空
 ```
 
-主机字段不填 `smb://`，共享名和共享内路径分开填。服务器需要启用 SMB2/3；不支持 SMB1。SMB3 加密开关是要求加密，服务器不支持时应连接失败，不以明文自动降级替代。
+主机字段不填 `smb://`；路径第一段为共享名，其余为共享内起始目录，不是服务器绝对挂载路径。编辑已有配置会把原共享名及根目录合并显示，存储格式不变。服务器需要启用 SMB2/3；不支持 SMB1。SMB3 加密开关是要求加密，服务器不支持时应连接失败，不以明文自动降级替代。
 
 SMB 数据源按 `DataSpec.position` 读取文件偏移，配合 256KiB 预读及连接复用，供播放器缓冲和定位使用，不先把整个视频下载到本地。
 

@@ -84,7 +84,7 @@ public final class DeviceChecks extends Instrumentation {
  tap(wh[0]*.12f,y);Thread.sleep(400);check(!playing(),"native side black bar never toggles playback");tap(x,y);Thread.sleep(400);check(playing(),"native image plays");
  tap(x,y);Thread.sleep(75);tap(x,y);check(viewport().mode()==VideoViewport.Mode.WIDTH,"second UP immediately cycles to width fit");check(playing(),"double preserves playing state");Thread.sleep(400);
  for(int preset=0;preset<3;preset++){
-  final int mode=preset;main(()->{try{Object t=field(activity,"transform");t.getClass().getMethod("setPreset",int.class).invoke(t,mode);app.store.saveSourcePreset(serverId,mode);}catch(Exception ex){throw new RuntimeException(ex);}});
+  final int mode=preset;main(()->{try{Object t=field(activity,"transform");t.getClass().getMethod("setPreset",int.class).invoke(t,mode);}catch(Exception ex){throw new RuntimeException(ex);}});
   int before=index();drag(x,y+150,x,y-450,240);ready();check(index()!=before,"preset "+preset+" upward swipe switches");drag(x,y-150,x,y+450,240);ready();check(index()==before,"preset "+preset+" downward swipe restores");
  }
  invoke("fitVideo");main(()->e.pause());

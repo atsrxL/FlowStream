@@ -16,7 +16,7 @@ public final class GestureBindings {
         switch(kind) {
             case "tap": case "double": return new String[]{"none","hud","play","fit","seek_back_1","seek_forward_1"};
             case "hold": return new String[]{"none","reverse","forward"};
-            case "drag": return new String[]{"none","scrub"};
+            case "drag": return new String[]{"none","scrub","scrub_fine"};
             default: throw new IllegalArgumentException("gesture kind");
         }
     }
@@ -45,6 +45,7 @@ public final class GestureBindings {
             case "reverse": return "快退调速";
             case "forward": return "快进调速";
             case "scrub": return "调整播放进度";
+            case "scrub_fine": return "精细进度调整（±10 秒）";
             case "seek_back_1": return "后退 1 秒";
             case "seek_forward_1": return "前进 1 秒";
             default: return "无操作";

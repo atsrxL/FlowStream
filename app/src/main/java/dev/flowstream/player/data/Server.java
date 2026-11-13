@@ -14,11 +14,12 @@ public final class Server {
         name = name.trim();
         if (name.isEmpty()) throw new IllegalArgumentException("请填写服务器名称");
         if (protocol.equals("SMB")) {
-            host = host.trim(); share = share.trim(); rootPath = MediaPaths.normalize(rootPath.trim());
+            host = host.trim(); rootPath = MediaPaths.normalize(rootPath);
             if (host.isEmpty() || host.contains("/") || host.contains("\\") || host.contains("@") || host.contains(" "))
                 throw new IllegalArgumentException("SMB 主机填写 IP / 主机名，不包含 smb:// 或共享名");
-            if (share.isEmpty() || share.contains("/") || share.contains("\\") || share.equals(".."))
+            if (share.isEmpty() || share.trim().isEmpty() || share.contains("/") || share.contains("\\"))
                 throw new IllegalArgumentException("共享名应为单个名称，例如 videos");
+            MediaPaths.normalize(share);
             if (port < 1 || port > 65535) throw new IllegalArgumentException("端口应在 1–65535 之间");
         } else if (protocol.equals("WEBDAV")) {
             url = new DavUrls(url, allowHttp).root();
@@ -27,6 +28,19 @@ public final class Server {
     }
     public String description() {
         return protocol.equals("SMB") ? "SMB · " + host + "/" + share : "WebDAV · " + url;
+    }
+    /** The form presents one path; persisted SMB fields remain share + rootPath. */
+    public String location() {
+        return share.isEmpty() ? "" : "/" + share + (rootPath.isEmpty() ? "" : "/" + rootPath);
+    }
+    public void setLocation(String path) {
+        String normalized = MediaPaths.normalize(path);
+        if (normalized.isEmpty()) throw new IllegalArgumentException("请填写包含共享名的路径，例如 /share 或 /share/电影");
+        int slash = normalized.indexOf('/');
+        String nextShare = slash < 0 ? normalized : normalized.substring(0, slash);
+        if (nextShare.trim().isEmpty()) throw new IllegalArgumentException("路径必须包含共享名，例如 /share");
+        share = nextShare;
+        rootPath = slash < 0 ? "" : normalized.substring(slash + 1);
     }
     public String smbPath(String relative) {
         String p = MediaPaths.normalize(relative);

@@ -36,12 +36,12 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     private VideoTransformController transform;
     private LinearLayout top,bottom,errorBox,timeline;
     private long scrubStartPosition,liveScrubTarget;
-    private boolean gestureScrub;
+    private boolean gestureScrub,fineScrub;
     private SeekParameters scrubSeekParameters=SeekParameters.DEFAULT;
     private Runnable pendingScrubSeek;
     private TextView title,counter,time,hud,errorMessage;
     private Button speedButton,pauseButton,markButton;
-    private HoldSeekBar seek;
+    private ScrubBar seek;
     private TextView mediaInfo;
     private long previewTarget=-1;
     private ProgressBar buffering;
@@ -90,7 +90,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         long now=SystemClock.elapsedRealtime(),bytes=loadedBytes.get();
         if(rateAt==0){rateAt=now;rateBytes=bytes;}
         else if(now-rateAt>=500){loadRate=Math.max(0,bytes-rateBytes)*1000d/(now-rateAt);rateAt=now;rateBytes=bytes;}
-        if(loadingRate!=null){loadingRate.setVisibility(!inPip() && buffering.getVisibility()==View.VISIBLE && hud.getVisibility()!=View.VISIBLE?View.VISIBLE:View.GONE);loadingRate.setText(String.format(Locale.ROOT,"加载 · %.1f %s",loadRate>=1048576?loadRate/1048576:loadRate/1024,loadRate>=1048576?"MB/s":"KB/s"));}
+        if(loadingRate!=null)loadingRate.setText(String.format(Locale.ROOT,"下载 · %.1f %s",loadRate>=1048576?loadRate/1048576:loadRate/1024,loadRate>=1048576?"MB/s":"KB/s"));
 
         if(player!=null && session!=null){
             long duration=player.getDuration(),position=player.getCurrentPosition();
@@ -116,11 +116,11 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         root.addView(video,new FrameLayout.LayoutParams(-1,-1));
         gestures=new GestureOverlay(this,this);gestures.setOnClickListener(v->singleTap(gestures.getWidth()/2f,gestures.getHeight()/2f));root.addView(gestures,new FrameLayout.LayoutParams(-1,-1));
         buffering=new ProgressBar(this);FrameLayout.LayoutParams bp=new FrameLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48),Gravity.CENTER);buffering.setVisibility(View.GONE);
-        loadingRate=Ui.text(this,"加载 · 0.0 KB/s",13,Ui.TEXT);loadingRate.setGravity(Gravity.CENTER);loadingRate.setBackground(Ui.background(0xaa000000,10,this));FrameLayout.LayoutParams rp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.CENTER_HORIZONTAL);rp.topMargin=Ui.dp(this,60);root.addView(loadingRate,rp);
         hud=Ui.text(this,"",17,Ui.TEXT);hud.setGravity(Gravity.CENTER);Ui.pad(hud,6);hud.setBackground(Ui.background(0xb0000000,16,this));hud.setVisibility(View.GONE);
         FrameLayout.LayoutParams hp=new FrameLayout.LayoutParams(-2,-2,Gravity.TOP|Gravity.CENTER_HORIZONTAL);hp.topMargin=Ui.dp(this,72);root.addView(hud,hp);
         top=Ui.column(this);top.setBackgroundColor(Color.TRANSPARENT);top.setPadding(Ui.dp(this,8),Ui.dp(this,8),Ui.dp(this,8),Ui.dp(this,10));
         title=Ui.text(this,"",15,Ui.TEXT);counter=Ui.text(this,"",12,Ui.MUTED);
+        top.addView(title);loadingRate=Ui.text(this,"下载 · 0.0 KB/s",12,Ui.MUTED);top.addView(loadingRate);top.addView(counter);
         LinearLayout toolbar=Ui.row(this);
         toolbar.addView(new IconButton(this,"rotate","旋转",this::rotate),new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
         toolbar.addView(new View(this),new LinearLayout.LayoutParams(0,1,2));
@@ -134,7 +134,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         infoRow.addView(new View(this),new LinearLayout.LayoutParams(0,1,2));infoRow.addView(new IconButton(this,"more","菜单",this::fileMenu),new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));bottom.addView(infoRow);
         timeline=Ui.row(this);
         lockButton=new IconButton(this,"lock","锁定手势",this::toggleLock);timeline.addView(lockButton,new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
-        seek=new HoldSeekBar(this);seek.setMax(10000);seek.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));seek.setContentDescription("长按后拖动播放进度并预览缩略图");timeline.addView(seek,new LinearLayout.LayoutParams(0,Ui.dp(this,48),3));
+        seek=new ScrubBar(this);seek.setMax(10000);seek.setContentDescription("按住拖动播放进度并预览缩略图；点按不跳转");timeline.addView(seek,new LinearLayout.LayoutParams(0,Ui.dp(this,48),3));
         time=Ui.text(this,"00:00 / --:--",10,Ui.TEXT);time.setGravity(Gravity.CENTER);timeline.addView(time,new LinearLayout.LayoutParams(0,Ui.dp(this,48),1));
         LinearLayout buttons=Ui.row(this);buttons.setGravity(Gravity.CENTER);
         circle(buttons,"-10s",()->seekBy(-10000,false));circle(buttons,"-3s",()->seekBy(-3000,false));
@@ -165,7 +165,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
             public void onStartTrackingTouch(SeekBar b){gestures.cancelGesture();scrubbing=true;handler.removeCallbacks(hideControls);if(player!=null){scrubResume=player.getPlayWhenReady();player.pause();}}
             public void onProgressChanged(SeekBar b,int p,boolean fromUser){if(fromUser && player!=null && player.getDuration()>0){long target=(long)(player.getDuration()*(p/10000.0));time.setText(Ui.time(target)+"\n"+Ui.time(player.getDuration()));showPreview(target);}}
-            public void onStopTrackingTouch(SeekBar b){if(player!=null){if(player.getDuration()>0)player.seekTo((long)(player.getDuration()*(b.getProgress()/10000.0)));player.setPlayWhenReady(scrubResume);}cancelScrub();checkpoint();showControls();}
+            public void onStopTrackingTouch(SeekBar b){if(player!=null){long duration=player.getDuration();if(duration>0){SeekParameters previous=player.getSeekParameters();player.setSeekParameters(SeekParameters.EXACT);player.seekTo(Math.min(duration-1,(long)(duration*(b.getProgress()/10000.0))));player.setSeekParameters(previous);}player.setPlayWhenReady(scrubResume);}cancelScrub();checkpoint();showControls();}
         });
         setContentView(root);
         if(Build.VERSION.SDK_INT>=30){
@@ -175,10 +175,11 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
                 top.setPadding(safe.left+Ui.dp(this,8),safe.top+Ui.dp(this,6),safe.right+Ui.dp(this,8),Ui.dp(this,8));
                 bottom.setPadding(safe.left+Ui.dp(this,8),Ui.dp(this,6),safe.right+Ui.dp(this,8),Ui.dp(this,8));
                 timeline.setPadding(safe.left+Ui.dp(this,8),0,safe.right+Ui.dp(this,8),safe.bottom+Ui.dp(this,4));
-                FrameLayout.LayoutParams hintParams=(FrameLayout.LayoutParams)hud.getLayoutParams();hintParams.topMargin=safe.top+Ui.dp(this,60);hud.setLayoutParams(hintParams);FrameLayout.LayoutParams rateParams=(FrameLayout.LayoutParams)loadingRate.getLayoutParams();rateParams.topMargin=hintParams.topMargin;loadingRate.setLayoutParams(rateParams);return insets;
+                FrameLayout.LayoutParams hintParams=(FrameLayout.LayoutParams)hud.getLayoutParams();hintParams.topMargin=safe.top+Ui.dp(this,60);hud.setLayoutParams(hintParams);return insets;
             });
         }
         root.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->updateGestureBounds());
+        top.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->updateGestureBounds());
         timeline.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->updateGestureBounds());
         video.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->updatePipParams());showControls();
     }
@@ -226,7 +227,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
     }
     private void openCurrent(long position,boolean playing){
         if(player==null || source==null || session==null)return;
-        clearPreviews();loopA=loopB=-1;updateAb();transform.setPreset(app.store.sourcePreset(server.id));transform.newVideo();
+        clearPreviews();loopA=loopB=-1;updateAb();transform.newVideo();
         syncRandom();randomOrder.visit(session.current().path);
         errorBox.setVisibility(View.GONE);RemoteItem item=session.current();
         MediaItem.Builder media=new MediaItem.Builder().setUri(source.uri(item.path)).setMediaId(session.id+":"+session.index)
@@ -278,10 +279,10 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         String action=app.store.gestureAction(zone,kind);
         if("hud".equals(action))toggleControls();else if("play".equals(action))togglePlayback();else if("seek_back_1".equals(action)){seekBy(-1000,false);flash("−1s");}else if("seek_forward_1".equals(action)){seekBy(1000,false);flash("+1s");}else if("fit".equals(action)){transform.cyclePreset();fitChanged();}
     }
-    private void fitChanged(){if(server!=null)app.store.saveSourcePreset(server.id,transform.presetIndex());counter.setText(transform.label());flash(transform.label());showControls();}
+    private void fitChanged(){counter.setText(transform.label());flash(transform.label());showControls();}
     private void updateGestureBounds(){
         if(root.getHeight()==0)return;
-        float first=top.getPaddingTop()+Ui.dp(this,96),last=timeline.getTop()-Ui.dp(this,112);
+        float first=top.getBottom(),last=timeline.getTop()-Ui.dp(this,112);
         last=Math.max(first+1,last);
         gestures.setInteractionBounds(first,last);
     }
@@ -291,15 +292,17 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         transform.pinch(factor,previousX,previousY,x,y);counter.setText(transform.label());
     }
     @Override public void transformFinished(){if(transform!=null)transform.finish();}
-    @Override public void scrubStarted(){
+    @Override public void scrubStarted(boolean fine){
         if(player==null||!player.isCurrentMediaItemSeekable()||player.getDuration()<=0)return;
-        scrubbing=gestureScrub=true;scrubStartPosition=liveScrubTarget=player.getCurrentPosition();scrubResume=player.getPlayWhenReady();
-        scrubSeekParameters=player.getSeekParameters();player.pause();player.setSeekParameters(SeekParameters.CLOSEST_SYNC);handler.removeCallbacks(hideControls);
+        scrubbing=gestureScrub=true;fineScrub=fine;scrubStartPosition=liveScrubTarget=player.getCurrentPosition();scrubResume=player.getPlayWhenReady();
+        scrubSeekParameters=player.getSeekParameters();player.pause();player.setSeekParameters(fine?SeekParameters.EXACT:SeekParameters.CLOSEST_SYNC);handler.removeCallbacks(hideControls);
     }
     @Override public void scrubMoved(float totalDxDp,float widthDp){
         if(!scrubbing||!gestureScrub||player==null)return;long duration=player.getDuration();
-        liveScrubTarget=Math.max(0,Math.min(duration-1,scrubStartPosition+Math.round(totalDxDp/Math.max(1,widthDp)*duration)));
+        long offset=fineScrub?Math.round(Math.max(-1d,Math.min(1d,totalDxDp/Math.max(1d,widthDp/2d)))*10000d):Math.round(totalDxDp/Math.max(1d,widthDp)*duration);
+        liveScrubTarget=Math.max(0,Math.min(duration-1,scrubStartPosition+offset));
         seek.setProgress((int)(liveScrubTarget*10000d/duration));time.setText(Ui.time(liveScrubTarget)+"\n"+Ui.time(duration));showPreview(liveScrubTarget);
+        if(fineScrub){double delta=(liveScrubTarget-scrubStartPosition)/1000d;persistentHint(String.format(Locale.ROOT,"精细 %s%.1f 秒\n%s / %s",delta>=0?"+":"−",Math.abs(delta),Ui.time(liveScrubTarget),Ui.time(duration)));}
         if(pendingScrubSeek==null){pendingScrubSeek=()->{pendingScrubSeek=null;if(scrubbing&&gestureScrub&&player!=null)player.seekTo(liveScrubTarget);};handler.postDelayed(pendingScrubSeek,100);}
     }
     @Override public void scrubEnded(boolean commit){
@@ -329,7 +332,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         if(trick==null)return;gestures.cancelGesture();handler.removeCallbacks(hideControls);
         String[] labels=new String[SpeedScale.COUNT];for(int i=0;i<labels.length;i++)labels[i]=SpeedScale.label(SpeedScale.at(i));
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle("播放速度").setSingleChoiceItems(labels,SpeedScale.nearest(trick.baseSpeed()),(d,which)->{
-            if(trick!=null){trick.setBaseSpeed(SpeedScale.at(which));session.speed=trick.baseSpeed();app.store.saveSourcePlayback(server.id,session.speed,transform.presetIndex()==2);speedButton.setContentDescription("播放速度 "+SpeedScale.label(trick.baseSpeed()));checkpoint();flash(SpeedScale.label(trick.baseSpeed()));}d.dismiss();
+            if(trick!=null){trick.setBaseSpeed(SpeedScale.at(which));session.speed=trick.baseSpeed();app.store.setGlobalSpeed(session.speed);speedButton.setContentDescription("播放速度 "+SpeedScale.label(trick.baseSpeed()));checkpoint();flash(SpeedScale.label(trick.baseSpeed()));}d.dismiss();
         }).setNegativeButton("关闭",null).create();dialog.setOnDismissListener(d->showControls());dialog.show();
     }
     private java.util.List<String> queuePaths(){java.util.List<String> paths=new java.util.ArrayList<>();for(RemoteItem item:session.queue)paths.add(item.path);return paths;}
@@ -351,7 +354,7 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         row.addView(b,new LinearLayout.LayoutParams(Ui.dp(this,48),Ui.dp(this,48)));return b;
     }
     private void updateAb(){if(abButton!=null){abButton.setText(loopB>loopA&&loopA>=0?"A↔B":loopA>=0?"A/•":"A/B");abButton.setTextColor(loopA>=0?0xff65b5ff:Ui.TEXT);}}
-    private void fitVideo(){gestures.cancelGesture();transform.resetFit();if(server!=null)app.store.saveSourcePreset(server.id,0);counter.setText(transform.label());showControls();}
+    private void fitVideo(){gestures.cancelGesture();transform.resetFit();counter.setText(transform.label());showControls();}
     private void cycleAb(){
         if(player==null||!player.isCurrentMediaItemSeekable())return;gestures.cancelGesture();
         if(loopA<0){loopA=player.getCurrentPosition();loopB=-1;}
@@ -389,9 +392,9 @@ public final class PlayerActivity extends BackActivity implements GestureOverlay
         deleting=true;nextCache.preload(this,server,"",0);clearPreviews();releasePlayer();mediaInfo.setVisibility(View.GONE);persistentHint("正在删除…");
         app.io.execute(()->{
             try{dev.flowstream.player.net.Browsers.deleteVideo(endpoint,item);
-                app.disk.execute(()->{try{Session remaining=app.store.removeMedia(id,item.path);app.store.removeMarked(endpoint.id,item.path);app.main.post(()->{
-                    deleting=false;if(isDestroyed())return;if(!id.equals(sessionId)){loadSession();return;}session=remaining;hud.setVisibility(View.GONE);Ui.toast(this,"已从服务器删除 "+item.name);
-                    if(remaining==null){finish();return;}if(visible)createPlayer();
+                app.disk.execute(()->{try{app.store.removeMediaForSource(endpoint.id,item.path);Session remaining=null;try{remaining=app.store.session(id);}catch(java.io.IOException ignored){}final Session updated=remaining;app.main.post(()->{
+                    deleting=false;if(isDestroyed())return;if(!id.equals(sessionId)){loadSession();return;}session=updated;hud.setVisibility(View.GONE);Ui.toast(this,"已从服务器删除 "+item.name);
+                    if(updated==null){finish();return;}if(visible)createPlayer();
                 });}catch(Exception e){app.main.post(()->{deleting=false;if(!isDestroyed()){hud.setVisibility(View.GONE);finish();}});}});
             }catch(Exception e){app.main.post(()->{deleting=false;if(isDestroyed())return;if(!id.equals(sessionId)){loadSession();return;}hud.setVisibility(View.GONE);if(visible)createPlayer();Ui.toast(this,Ui.error(e));});}
         });

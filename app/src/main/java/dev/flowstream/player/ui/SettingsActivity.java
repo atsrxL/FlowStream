@@ -6,7 +6,6 @@ import android.text.InputType;
 import android.view.*;
 import android.widget.*;
 import dev.flowstream.player.FlowApp;
-import dev.flowstream.core.GestureBindings;
 import dev.flowstream.player.data.Server;
 import dev.flowstream.player.net.Browsers;
 import dev.flowstream.player.net.NextVideoCache;
@@ -40,27 +39,18 @@ public final class SettingsActivity extends BackActivity {
         SeekBar timeoutSlider=new SeekBar(this);timeoutSlider.setMax(18);timeoutSlider.setProgress((app.store.hudTimeoutMs()-1000)/500);timeoutSlider.setContentDescription("菜单自动隐藏时间，1 到 10 秒");body.addView(timeoutSlider);
         timeoutSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar b,int p,boolean user){timeout.setText(timeoutLabel(1000+p*500));if(user)app.store.setHudTimeoutMs(1000+p*500);}public void onStartTrackingTouch(SeekBar b){}public void onStopTrackingTouch(SeekBar b){}});
         body.addView(Ui.text(this,"九宫格手势",18,Ui.BLUE));
-        body.addView(Ui.text(this,"缩放时仅平移和双击适屏。",12,Ui.MUTED));
-        for(int zone=0;zone<9;zone++){
-            body.addView(Ui.text(this,zoneLabel(zone),16,Ui.TEXT));
-            addGestureSetting(body,zone,"tap","单击");addGestureSetting(body,zone,"double","双击");
-            addGestureSetting(body,zone,"hold","长按");addGestureSetting(body,zone,"drag","左右拖动");
-        }
+        body.addView(new GestureSettingsView(this,app.store));
         body.addView(Ui.text(this,"当前来源",18,Ui.BLUE));
         body.addView(Ui.text(this,"选择播放来源。",13,Ui.MUTED));servers=Ui.column(this);body.addView(servers);
         body.addView(Ui.button(this,"＋ 添加服务器",()->form(new Server())));
         TextView info=Ui.text(this,"WebDAV 支持 Basic 认证及匿名访问。",14,Ui.MUTED);info.setPadding(0,Ui.dp(this,18),0,Ui.dp(this,18));body.addView(info);
-        body.addView(Ui.text(this,"FlowStream 0.9.0",13,Ui.MUTED));
+        body.addView(Ui.text(this,versionLabel(),13,Ui.MUTED));
         setContentView(root);Ui.safeInsets(this,root);Ui.systemBars(this);refresh();
     }
     private String timeoutLabel(int ms){return "菜单自动隐藏 · "+String.format(Locale.ROOT,"%.1f 秒",ms/1000f);}
-    private String zoneLabel(int zone){return new String[]{"上左","上中","上右","中左","中央","中右","下左","下中","下右"}[zone];}
-    private void addGestureSetting(LinearLayout body,int zone,String kind,String title){
-        Button button=Ui.button(this,title+" · "+GestureBindings.label(app.store.gestureAction(zone,kind)),()->{});
-        button.setOnClickListener(v->{String[] values=GestureBindings.actions(kind);String[] labels=new String[values.length];int selected=0;
-            for(int i=0;i<values.length;i++){labels[i]=GestureBindings.label(values[i]);if(values[i].equals(app.store.gestureAction(zone,kind)))selected=i;}
-            new AlertDialog.Builder(this).setTitle(zoneLabel(zone)+" · "+title).setSingleChoiceItems(labels,selected,(d,which)->{app.store.setGestureAction(zone,kind,values[which]);button.setText(title+" · "+labels[which]);d.dismiss();}).setNegativeButton("取消",null).show();
-        });body.addView(button);
+    private String versionLabel(){
+        try{return "FlowStream "+getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
+        catch(android.content.pm.PackageManager.NameNotFoundException e){return "FlowStream";}
     }
     private void refresh(){final int token=++generation;app.disk.execute(()->{
         try{List<Server> result=app.store.servers();app.main.post(()->{
@@ -87,8 +77,8 @@ public final class SettingsActivity extends BackActivity {
         LinearLayout smb=Ui.column(this);body.addView(smb);
         EditText host=field(smb,"主机 IP / 域名",existing.host,InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);
         EditText port=field(smb,"端口",String.valueOf(existing.port),InputType.TYPE_CLASS_NUMBER);
-        EditText share=field(smb,"共享名",existing.share,InputType.TYPE_CLASS_TEXT);
-        EditText root=field(smb,"共享内根目录，可留空",existing.rootPath,InputType.TYPE_CLASS_TEXT);
+        EditText path=field(smb,"路径",existing.location(),InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);
+        path.setHint("/share 或 /share/电影");
         EditText domain=field(smb,"域 / 工作组，可留空",existing.domain,InputType.TYPE_CLASS_TEXT);
         CheckBox encrypt=new CheckBox(this);encrypt.setText("要求 SMB3 传输加密");encrypt.setChecked(existing.encryptSmb);smb.addView(encrypt);
         LinearLayout dav=Ui.column(this);body.addView(dav);
@@ -105,9 +95,9 @@ public final class SettingsActivity extends BackActivity {
             View.OnClickListener perform=v->{
                 final boolean save=v==dialog.getButton(AlertDialog.BUTTON_POSITIVE);
                 Server s=new Server();s.id=existing.id;s.name=name.getText().toString();s.protocol=protocol.getSelectedItemPosition()==0?"SMB":"WEBDAV";
-                s.host=host.getText().toString();s.share=share.getText().toString();s.rootPath=root.getText().toString();s.domain=domain.getText().toString();s.url=url.getText().toString();
+                s.host=host.getText().toString();s.share=existing.share;s.rootPath=existing.rootPath;s.domain=domain.getText().toString();s.url=url.getText().toString();
                 s.username=username.getText().toString();s.password=password.getText().toString();s.allowHttp=http.isChecked();s.encryptSmb=encrypt.isChecked();
-                try{s.port=s.protocol.equals("SMB")?Integer.parseInt(port.getText().toString()):445;s.validate();}catch(Exception e){status.setText(Ui.error(e));return;}
+                try{s.port=s.protocol.equals("SMB")?Integer.parseInt(port.getText().toString()):445;if(s.protocol.equals("SMB"))s.setLocation(path.getText().toString());s.validate();}catch(Exception e){status.setText(Ui.error(e));return;}
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(false);status.setText(save?"正在保存…":"正在连接…");
                 Runnable task=()->{try{String message;if(save){app.store.saveServer(s);message="服务器已保存";}else{message="连接成功，项目数："+Browsers.list(s,"").size();}
                     app.main.post(()->{if(isDestroyed() || !dialog.isShowing())return;status.setText(message);dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(true);if(save){dialog.dismiss();refresh();}});
